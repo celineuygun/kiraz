@@ -16,11 +16,13 @@ public:
     using Cptr = std::shared_ptr<const Node>;
 
     Node() {}
+    Node(int id) : m_id(id) {}
     virtual ~Node();
 
     virtual std::string as_string() const = 0;
     void print() { fmt::print("{}\n", as_string()); }
 
+    auto get_id() const { return m_id; }
     void set_pos(int l, int c) {
         m_line = l;
         m_col = c;
@@ -43,6 +45,7 @@ public:
 private:
     static std::vector<Node::Ptr> s_roots;
 
+    int m_id;
     int m_line = 0;
     int m_col = 0;
 };
