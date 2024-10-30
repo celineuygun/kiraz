@@ -5,22 +5,52 @@
 #include <kiraz/ast/Operator.h>
 #include <kiraz/ast/Literal.h>
 
+#include <kiraz/token/Boolean.h>
+#include <kiraz/token/Identifier.h>
+#include <kiraz/token/Keyword.h>
 #include <kiraz/token/Literal.h>
+#include <kiraz/token/Operator.h>
 
 int yyerror(const char *msg);
 extern std::shared_ptr<Token> curtoken;
 extern int yylineno;
 %}
 
+%token    IDENTIFIER
+
+%token    OP_RETURNS
+%token    OP_EQUALS
+%token    OP_ASSIGN
+%token    OP_GT
+%token    OP_LT
+%token    OP_GE
+%token    OP_LE
 %token    OP_LPAREN
 %token    OP_RPAREN
-
+%token    OP_LBRACE
+%token    OP_RBRACE
+%token    OP_COLON
 %token    OP_PLUS
 %token    OP_MINUS
-%token    OP_DIVF
 %token    OP_MULT
+%token    OP_DIVF
+%token    OP_COMMA
+%token    OP_NEWLINE
+%token    OP_SCOLON
+%token    OP_DOT
+%token    OP_NOT
 
 %token    L_INTEGER
+%token    L_STRING
+%token    L_BOOLEAN
+%token    L_TRUE
+%token    L_FALSE
+
+%token    KW_IF
+%token    KW_FUNC
+%token    KW_WHILE
+%token    KW_CLASS
+%token    KW_IMPORT
 
 %left     OP_PLUS OP_MINUS
 %left     OP_MULT OP_DIVF
