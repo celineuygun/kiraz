@@ -40,6 +40,26 @@ public:
         case OP_DIVF:
             opstr = "DivF";
             break;
+
+        case OP_EQUALS:
+            opstr = "Equals"; 
+        break;
+        
+        case OP_GT: 
+            opstr = "GT"; 
+            break;
+        
+        case OP_LT: 
+            opstr = "LT"; 
+            break;
+        
+        case OP_GE: 
+            opstr = "GE"; 
+            break;
+        
+        case OP_LE: 
+            opstr = "LE"; 
+            break;
         
         default:
             break;
@@ -70,6 +90,68 @@ public:
 class OpDivF : public OpBinary {
 public:
     OpDivF(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_DIVF, left, right) {}
+};
+
+class OpEquals : public OpBinary {
+public:
+    OpEquals(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_EQUALS, left, right) {}
+};
+
+class OpGT : public OpBinary {
+public:
+    OpGT(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_GT, left, right) {}
+};
+
+class OpLT : public OpBinary {
+public:
+    OpLT(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_LT, left, right) {}
+};
+
+class OpGE : public OpBinary {
+public:
+    OpGE(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_GE, left, right) {}
+};
+
+class OpLE : public OpBinary {
+public:
+    OpLE(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_LE, left, right) {}
+};
+
+class OpAssign : public Node {
+private:
+    Node::Ptr m_left;
+    Node::Ptr m_right;
+
+public:
+    OpAssign(const Node::Ptr &left, const Node::Ptr &right)
+        : Node(OP_ASSIGN), m_left(left), m_right(right) {
+            assert(left);
+            assert(right);
+        }
+
+    auto get_left() const { return m_left; }
+    auto get_right() const { return m_right; }
+
+    std::string as_string() const override {
+        return fmt::format("Assign({}, {})", m_left->as_string(), m_right->as_string());
+    }
+};
+
+class OpReturn : public Node {
+private:
+    Node::Ptr m_returnValue;
+
+public:
+    OpReturn(const Node::Ptr &returnValue) 
+        : Node(OP_RETURNS), m_returnValue(returnValue) {
+            assert(returnValue);
+        }
+
+    auto get_return_value() const { return m_returnValue; }
+
+    std::string as_string() const override {
+        return fmt::format("Return({})", m_returnValue->as_string());
+    }
 };
 
 }

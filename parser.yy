@@ -2,8 +2,8 @@
 #include "main.h"
 #include "lexer.hpp"
 
-#include <kiraz/ast/Operator.h>
 #include <kiraz/ast/Literal.h>
+#include <kiraz/ast/Operator.h>
 
 #include <kiraz/token/Boolean.h>
 #include <kiraz/token/Identifier.h>
