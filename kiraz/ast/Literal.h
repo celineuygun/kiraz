@@ -20,8 +20,8 @@ public:
         : Node(L_INTEGER), m_operator(op), m_operand(operand) {}
 
     std::string as_string() const override {
-        return fmt::format("Integer({}, {})", m_operator, m_operand->as_string());
-        //return fmt::format("Integer({}, {})", operator_to_string(m_operator), m_operand->as_string());
+        //return fmt::format("Integer({}, {})", m_operator, m_operand->as_string());
+        return fmt::format("Integer({}, {})", operator_to_string(m_operator), m_operand->as_string());
     }
 
 private:

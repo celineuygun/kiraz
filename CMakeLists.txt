@@ -115,10 +115,14 @@ add_library(kiraz STATIC
     kiraz/Node.h
     kiraz/Node.cpp
 
+    kiraz/ast/Identifier.h
+    kiraz/ast/Identifier.cpp
     kiraz/ast/Literal.h
     kiraz/ast/Literal.cpp
     kiraz/ast/Operator.h
     kiraz/ast/Operator.cpp
+    kiraz/ast/Statement.h
+    kiraz/ast/Statement.cpp
 
     main.h
     ${BISON_PARSER_OUTPUTS}

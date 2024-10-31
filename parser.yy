@@ -1,9 +1,12 @@
 %{
 #include "main.h"
 #include "lexer.hpp"
+#include <iostream>
 
+#include <kiraz/ast/Identifier.h>
 #include <kiraz/ast/Literal.h>
 #include <kiraz/ast/Operator.h>
+#include <kiraz/ast/Statement.h>
 
 #include <kiraz/token/Boolean.h>
 #include <kiraz/token/Identifier.h>
@@ -51,34 +54,73 @@ extern int yylineno;
 %token    KW_WHILE
 %token    KW_CLASS
 %token    KW_IMPORT
+%token    KW_LET
 
 %left     OP_PLUS OP_MINUS
 %left     OP_MULT OP_DIVF
+%right    OP_ASSIGN
 
 %token    REJECTED
 %%
 
 stmt
-    : OP_LPAREN stmt OP_RPAREN { $$ = $2; }
-    | addsub
+    : expr_stmt
+    | assign_stmt
+    | let_stmt
     ;
 
-addsub
-    : muldiv
-    | stmt OP_PLUS stmt { $$ = Node::add<ast::OpAdd>($1, $3);}
-    | stmt OP_MINUS stmt { $$ = Node::add<ast::OpSub>($1, $3);}
+let_stmt
+    : KW_LET IDENTIFIER OP_ASSIGN expr OP_SCOLON
+    {
+        $$ = Node::add<ast::LetStatement>(
+            Node::add<ast::Identifier>(curtoken),
+            $4
+        );
+    }
+    | KW_LET IDENTIFIER OP_COLON IDENTIFIER OP_SCOLON
+    { // TODO
+        $$ = Node::add<ast::LetStatement>(
+            Node::add<ast::Identifier>(curtoken),
+            Node::add<ast::TypeNode>($4->as_string())
+        );
+    }
+    | KW_LET IDENTIFIER OP_COLON IDENTIFIER OP_ASSIGN expr OP_SCOLON
+    { // TODO
+        $$ = Node::add<ast::LetStatement>(
+            Node::add<ast::Identifier>(curtoken),
+            Node::add<ast::TypeNode>($4->as_string()),
+            $6
+        );
+    }
     ;
 
-muldiv
-    : posneg
-    | stmt OP_MULT stmt { $$ = Node::add<ast::OpMult>($1, $3);}
-    | stmt OP_DIVF stmt { $$ = Node::add<ast::OpDivF>($1, $3);}
+
+assign_stmt
+    : IDENTIFIER OP_ASSIGN expr OP_SCOLON
+    {
+        // FIXME l=Identifier(OP_SCOLON)
+        auto identifier = Node::add<ast::Identifier>(curtoken);
+        $$ = Node::add<ast::AssignmentStatement>(
+            identifier,
+            $3
+        );
+    }
     ;
 
-posneg
-    : L_INTEGER     { $$ = Node::add<ast::Integer>(curtoken);}
-    | OP_PLUS stmt  { $$ = Node::add<ast::SignedNode>(OP_PLUS, $2);}
-    | OP_MINUS stmt  { $$ = Node::add<ast::SignedNode>(OP_MINUS, $2);}
+expr_stmt
+    : expr OP_SCOLON            { $$ = $1; }
+    ;
+
+expr
+    : IDENTIFIER                { $$ = Node::add<ast::Identifier>(curtoken); }
+    | L_INTEGER                 { $$ = Node::add<ast::Integer>(curtoken);}
+    | expr OP_PLUS expr         { $$ = Node::add<ast::OpAdd>($1, $3); }
+    | expr OP_MINUS expr        { $$ = Node::add<ast::OpSub>($1, $3); }
+    | expr OP_MULT expr         { $$ = Node::add<ast::OpMult>($1, $3);}
+    | expr OP_DIVF expr         { $$ = Node::add<ast::OpDivF>($1, $3);}
+    | OP_LPAREN expr OP_RPAREN  { $$ = $2; }
+    | OP_PLUS expr              { $$ = Node::add<ast::SignedNode>(OP_PLUS, $2);}
+    | OP_MINUS expr             { $$ = Node::add<ast::SignedNode>(OP_MINUS, $2);}
     ;
 
 %%
