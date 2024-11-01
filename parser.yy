@@ -17,6 +17,7 @@
 int yyerror(const char *msg);
 extern std::shared_ptr<Token> curtoken;
 extern int yylineno;
+extern std::string identifier_txt;
 %}
 
 %token    IDENTIFIER
@@ -63,43 +64,37 @@ extern int yylineno;
 %token    REJECTED
 %%
 
+prog
+    : stmts
+    ;
+
+stmts
+    : stmt stmts
+    | /* empty */
+    ;
+
 stmt
-    : expr_stmt
+    : decl_stmt
     | assign_stmt
-    | let_stmt
+    | expr_stmt
     ;
 
-let_stmt
-    : KW_LET IDENTIFIER OP_ASSIGN expr OP_SCOLON
-    {
-        $$ = Node::add<ast::LetStatement>(
-            Node::add<ast::Identifier>(curtoken),
-            $4
-        );
-    }
-    | KW_LET IDENTIFIER OP_COLON IDENTIFIER OP_SCOLON
-    { // TODO
-        $$ = Node::add<ast::LetStatement>(
-            Node::add<ast::Identifier>(curtoken),
-            Node::add<ast::TypeNode>($4->as_string())
-        );
-    }
-    | KW_LET IDENTIFIER OP_COLON IDENTIFIER OP_ASSIGN expr OP_SCOLON
-    { // TODO
-        $$ = Node::add<ast::LetStatement>(
-            Node::add<ast::Identifier>(curtoken),
-            Node::add<ast::TypeNode>($4->as_string()),
-            $6
-        );
-    }
+decl_stmt
+    : IDENTIFIER type_decl OP_SCOLON
     ;
 
+type_decl
+    : OP_COLON dtype
+    ;
+
+dtype
+    : L_INTEGER    // TODO implement type checking
+    ;
 
 assign_stmt
     : IDENTIFIER OP_ASSIGN expr OP_SCOLON
     {
-        // FIXME l=Identifier(OP_SCOLON)
-        auto identifier = Node::add<ast::Identifier>(curtoken);
+        auto identifier = Node::add<ast::Identifier>(identifier_txt); 
         $$ = Node::add<ast::AssignmentStatement>(
             identifier,
             $3
@@ -108,12 +103,12 @@ assign_stmt
     ;
 
 expr_stmt
-    : expr OP_SCOLON            { $$ = $1; }
+    : expr OP_SCOLON           { $$ = $1; }
     ;
 
 expr
-    : IDENTIFIER                { $$ = Node::add<ast::Identifier>(curtoken); }
-    | L_INTEGER                 { $$ = Node::add<ast::Integer>(curtoken);}
+    : IDENTIFIER                { $$ = Node::add<ast::Identifier>(identifier_txt); }
+    | L_INTEGER                 { $$ = Node::add<ast::Integer>(curtoken); }
     | expr OP_PLUS expr         { $$ = Node::add<ast::OpAdd>($1, $3); }
     | expr OP_MINUS expr        { $$ = Node::add<ast::OpSub>($1, $3); }
     | expr OP_MULT expr         { $$ = Node::add<ast::OpMult>($1, $3);}

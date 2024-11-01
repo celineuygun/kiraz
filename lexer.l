@@ -13,6 +13,7 @@
 static auto &colno = Token::colno;
 using namespace token;
 extern std::shared_ptr<Token> curtoken;
+std::string identifier_txt;
 %}
 
 
@@ -53,7 +54,7 @@ extern std::shared_ptr<Token> curtoken;
 "."                         { colno += yyleng; curtoken = Token::New<OpDot>(); return OP_DOT; }
 "!"                         { colno += yyleng; curtoken = Token::New<OpNot>(); return OP_NOT; }
 
-[a-zA-Z_][0-9a-zA-Z_]*      { colno += yyleng; curtoken = Token::New<Identifier>(yytext); return IDENTIFIER; }
+[a-zA-Z_][0-9a-zA-Z_]*      { colno += yyleng; identifier_txt = yytext; curtoken = Token::New<Identifier>(yytext); return IDENTIFIER; }
 
 [ \t]+                      { colno += yyleng; }
 .                           { colno += yyleng; curtoken = Token::New<Rejected>(yytext); return YYUNDEF; }
