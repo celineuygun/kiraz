@@ -4,6 +4,7 @@
 #include <cassert>
 #include <string>
 #include <kiraz/Node.h>
+#include <iostream>
 
 namespace ast {
 
@@ -12,10 +13,9 @@ protected:
     explicit Statement(int type) : Node(type) {}
 };
 
-// TODO
+// TODO change types
 class TypeNode : public Node {
 private:
-    std::string m_type;
     enum enum_type {
         none_type,
         int_type,
@@ -37,9 +37,16 @@ private:
         custom_type
     } m_enumType;
 
+    std::string m_type;
+
 public:
     TypeNode(const std::string &type) 
-        : Node(/*TODO*/), m_type(type) {
+        : Node(IDENTIFIER), m_type(type) {
+        
+        initialize_enum_from_string(type);
+    }
+
+    void initialize_enum_from_string(const std::string &type) {
         if (type == "int") m_enumType = int_type;
         else if (type == "uint") m_enumType = uint_type;
         else if (type == "long") m_enumType = long_long_type;
@@ -58,12 +65,14 @@ public:
         else m_enumType = none_type;
     }
 
+    auto get_type() const { return m_type; }
+
     bool is_valid_type() const {
         return m_enumType != none_type;
     }
 
     std::string as_string() const override {
-        return fmt::format("Type({})", m_type);
+        return m_type;
     }
 };
 
@@ -85,8 +94,8 @@ public:
             assert(identifier);
             assert(value);
             if (type) {
-                auto typeNode = Node::add<TypeNode>(type->as_string());
-                assert(typeNode && typeNode->is_valid_type()); // Check if the type is TypeNode
+                auto typeNode = Node::add<ast::TypeNode>(type->as_string());
+                assert(typeNode && typeNode->is_valid_type());
             } else {
                 m_type = nullptr;
             }
@@ -97,13 +106,13 @@ public:
     auto get_value() const { return m_value; }
 
     std::string as_string() const override {
-        std::string output = fmt::format("Let(n={}, ", m_identifier->as_string());
+        std::string output = fmt::format("Let(\n  n={},", m_identifier->as_string());
         
         if (m_type) {
-            output += fmt::format("t={}, ", m_type->as_string());
+            output += fmt::format("\n  t={},", m_type->as_string());
         }
 
-        output += fmt::format("i={})", m_value ? m_value->as_string() : "none");
+        output += fmt::format("\n  i={})", m_value ? m_value->as_string() : "none");
 
         return output;
     }
@@ -112,13 +121,25 @@ public:
 class AssignmentStatement : public Statement {
 private:
     Node::Ptr m_left;
+    Node::Ptr m_type;
     Node::Ptr m_right;
 
 public:
     AssignmentStatement(const Node::Ptr &left, const Node::Ptr &right)
-        : Statement(OP_ASSIGN), m_left(left), m_right(right) {
+        : Statement(OP_ASSIGN), m_left(left), m_type(nullptr), m_right(right) {
             assert(left);
             assert(right);
+        }
+    AssignmentStatement(const Node::Ptr &left, const Node::Ptr &type, const Node::Ptr &right)
+        : Statement(OP_ASSIGN), m_left(left), m_type(type), m_right(right) {
+            assert(left);
+            assert(right);
+            if (type) {
+                auto typeNode = Node::add<ast::TypeNode>(type->as_string());
+                assert(typeNode && typeNode->is_valid_type());
+            } else {
+                m_type = nullptr;
+            }
         }
 
     auto get_left() const { return m_left; }

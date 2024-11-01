@@ -50,6 +50,9 @@ extern std::string identifier_txt;
 %token    L_TRUE
 %token    L_FALSE
 
+%token INT UINT LONG ULONG INT128 UINT128 BOOL CHAR FLOAT 
+%token DOUBLE CSTRING STRING POINTER CUSTOM 
+
 %token    KW_IF
 %token    KW_FUNC
 %token    KW_WHILE
@@ -74,21 +77,43 @@ stmts
     ;
 
 stmt
-    : decl_stmt
-    | assign_stmt
+    : assign_stmt
+    | let_stmt
     | expr_stmt
     ;
 
-decl_stmt
-    : IDENTIFIER type_decl OP_SCOLON
-    ;
-
 type_decl
-    : OP_COLON dtype
+    : OP_COLON dtype    { $$ = $2; }
     ;
 
 dtype
-    : L_INTEGER    // TODO implement type checking
+    : INT         { $$ = Node::add<ast::TypeNode>("int"); }
+    | UINT        { $$ = Node::add<ast::TypeNode>("uint"); }
+    | LONG        { $$ = Node::add<ast::TypeNode>("long"); }
+    | ULONG       { $$ = Node::add<ast::TypeNode>("ulong"); }
+    | INT128      { $$ = Node::add<ast::TypeNode>("int128"); }
+    | UINT128     { $$ = Node::add<ast::TypeNode>("uint128"); }
+    | BOOL        { $$ = Node::add<ast::TypeNode>("bool"); }
+    | CHAR        { $$ = Node::add<ast::TypeNode>("char"); }
+    | FLOAT       { $$ = Node::add<ast::TypeNode>("float"); }
+    | DOUBLE      { $$ = Node::add<ast::TypeNode>("double"); }
+    | CSTRING     { $$ = Node::add<ast::TypeNode>("cstring"); }
+    | STRING      { $$ = Node::add<ast::TypeNode>("string"); }
+    | POINTER     { $$ = Node::add<ast::TypeNode>("pointer"); }
+    | CUSTOM      { $$ = Node::add<ast::TypeNode>("custom"); }
+    ;
+
+let_stmt
+    : KW_LET IDENTIFIER OP_ASSIGN expr OP_SCOLON
+      { 
+          auto identifier = Node::add<ast::Identifier>(identifier_txt);
+          $$ = Node::add<ast::LetStatement>(identifier, $4);
+      }
+    | KW_LET IDENTIFIER type_decl OP_ASSIGN expr OP_SCOLON
+      { 
+          auto identifier = Node::add<ast::Identifier>(identifier_txt);
+          $$ = Node::add<ast::LetStatement>(identifier, $3, $5);
+      }
     ;
 
 assign_stmt
@@ -98,6 +123,15 @@ assign_stmt
         $$ = Node::add<ast::AssignmentStatement>(
             identifier,
             $3
+        );
+    }
+    | IDENTIFIER type_decl OP_ASSIGN expr OP_SCOLON
+    {
+        auto identifier = Node::add<ast::Identifier>(identifier_txt); 
+        $$ = Node::add<ast::AssignmentStatement>(
+            identifier,
+            $2,
+            $4
         );
     }
     ;

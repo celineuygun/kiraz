@@ -3,7 +3,6 @@
 
 #include <kiraz/Node.h>
 #include <string>
-#include <iostream>
 
 namespace ast {
 

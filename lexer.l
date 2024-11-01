@@ -10,6 +10,7 @@
 #include <kiraz/token/Keyword.h>
 #include <kiraz/token/Literal.h>
 #include <kiraz/token/Operator.h>
+
 static auto &colno = Token::colno;
 using namespace token;
 extern std::shared_ptr<Token> curtoken;
@@ -18,6 +19,22 @@ std::string identifier_txt;
 
 
 %%
+
+"int"        { colno += yyleng; return INT; }
+"uint"       { colno += yyleng; return UINT; }
+"long"       { colno += yyleng; return LONG; }
+"ulong"      { colno += yyleng; return ULONG; }
+"int128"     { colno += yyleng; return INT128; }
+"uint128"    { colno += yyleng; return UINT128; }
+"bool"       { colno += yyleng; return BOOL; }
+"char"       { colno += yyleng; return CHAR; }
+"float"      { colno += yyleng; return FLOAT; }
+"double"     { colno += yyleng; return DOUBLE; }
+"cstring"    { colno += yyleng; return CSTRING; }
+"string"     { colno += yyleng; return STRING; }
+"pointer"    { colno += yyleng; return POINTER; }
+"custom"     { colno += yyleng; return CUSTOM; }
+
 
 "import"                    { colno += yyleng; curtoken = Token::New<KeywordImport>(); return KW_IMPORT; }
 "func"                      { colno += yyleng; curtoken = Token::New<KeywordFunc>(); return KW_FUNC; }
