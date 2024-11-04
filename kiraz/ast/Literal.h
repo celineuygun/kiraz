@@ -9,9 +9,11 @@ public:
     Integer(Token::Ptr);
 
     std::string as_string() const override {return fmt::format("Integer({})", m_value);}
+    // std::string as_string() const override { return fmt::format("Int({}, {})", m_base, m_value); }
 
 private:
     int64_t m_value;
+    int64_t m_base;
 };
 
 class SignedNode : public Node {
@@ -35,6 +37,18 @@ private:
             default: return fmt::format("UnknownOperator({})", op);
         }
     }
+};
+
+class String : public Node {
+public:
+    String(Token::Ptr t);
+
+    std::string as_string() const override { 
+        return fmt::format("Str({})", m_value); 
+    }
+
+private:
+    std::string m_value;
 };
 }
 

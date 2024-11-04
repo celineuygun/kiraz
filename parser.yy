@@ -51,7 +51,7 @@ extern std::stack<std::string> identifierStack;
 %token    L_TRUE
 %token    L_FALSE
 
-%token INT UINT LONG ULONG INT128 UINT128 BOOL CHAR FLOAT 
+%token T INT INT64 UINT LONG ULONG INT128 UINT128 BOOL CHAR FLOAT 
 %token DOUBLE CSTRING STRING POINTER CUSTOM 
 
 %token    KW_IF
@@ -61,20 +61,31 @@ extern std::stack<std::string> identifierStack;
 %token    KW_IMPORT
 %token    KW_LET
 
+%right    OP_ASSIGN
 %left     OP_PLUS OP_MINUS
 %left     OP_MULT OP_DIVF
-%right    OP_ASSIGN
+%left     UNARY
 
 %token    REJECTED
+
+%start prog
+
 %%
 
 prog
-    : stmts       {$$ = Node::add<ast::Module>($1);}
+    : stmts       
+    {
+        if($1) 
+        {
+            $$ = Node::add<ast::Module>($1);
+        }
+    }
     ;
 
 stmts
     : stmt stmts  { $$ = Node::add<ast::StatementList>($1, $2); }
     | /* empty */ { $$ = nullptr; }
+    | expr        { $$ = $1; }
     ;
 
 stmt
@@ -82,6 +93,7 @@ stmt
     | let_stmt
     | assign_stmt
     | expr_stmt
+    | OP_LPAREN stmt OP_RPAREN { $$ = $2; }
     ;
 
 type_decl
@@ -89,7 +101,9 @@ type_decl
     ;
 
 dtype
-    : INT         { $$ = Node::add<ast::TypeNode>("int"); }
+    : T           { $$ = Node::add<ast::TypeNode>("T"); }
+    | INT         { $$ = Node::add<ast::TypeNode>("int"); }
+    | INT64       { $$ = Node::add<ast::TypeNode>("Int64"); }
     | UINT        { $$ = Node::add<ast::TypeNode>("uint"); }
     | LONG        { $$ = Node::add<ast::TypeNode>("long"); }
     | ULONG       { $$ = Node::add<ast::TypeNode>("ulong"); }
@@ -113,10 +127,10 @@ func_stmt
         $$ = Node::add<ast::FunctionStatement>(identifier, $4, $6, $8);
     }
     ;
-
+    
 param_list
     : /* empty */                   { $$ = nullptr; }
-    | param                         { $$ = $1; }
+    | param                         { $$ = Node::add<ast::ParameterList>($1, nullptr); }
     | param_list OP_COMMA param     { $$ = Node::add<ast::ParameterList>($1, $3); }
     ;
 
@@ -141,6 +155,12 @@ let_stmt
           auto identifier = Node::add<ast::Identifier>(identifierStack.top());
           identifierStack.pop();
           $$ = Node::add<ast::LetStatement>(identifier, $3, $5);
+      }
+    | KW_LET IDENTIFIER type_decl OP_SCOLON
+      { 
+          auto identifier = Node::add<ast::Identifier>(identifierStack.top());
+          identifierStack.pop();
+          $$ = Node::add<ast::LetStatement>(identifier, $3, nullptr);
       }
     ;
 
@@ -171,18 +191,34 @@ expr_stmt
     ;
 
 expr
-    : IDENTIFIER                
-    {   $$ = Node::add<ast::Identifier>(identifierStack.top());
+    : additive
+    ;
+
+additive
+    : additive OP_PLUS multiplicative { $$ = Node::add<ast::OpAdd>($1, $3); }
+    | additive OP_MINUS multiplicative { $$ = Node::add<ast::OpSub>($1, $3); }
+    | multiplicative
+    ;
+
+multiplicative
+    : multiplicative OP_MULT negative { $$ = Node::add<ast::OpMult>($1, $3); }
+    | multiplicative OP_DIVF negative { $$ = Node::add<ast::OpDivF>($1, $3); }
+    | negative
+    ;
+
+negative
+    : OP_MINUS negative { $$ = Node::add<ast::SignedNode>(OP_MINUS, $2); }
+    | atom
+    ;
+
+atom
+    : IDENTIFIER { 
+        $$ = Node::add<ast::Identifier>(identifierStack.top());
         identifierStack.pop(); 
     }
-    | L_INTEGER                 { $$ = Node::add<ast::Integer>(curtoken); }
-    | expr OP_PLUS expr         { $$ = Node::add<ast::OpAdd>($1, $3); }
-    | expr OP_MINUS expr        { $$ = Node::add<ast::OpSub>($1, $3); }
-    | expr OP_MULT expr         { $$ = Node::add<ast::OpMult>($1, $3);}
-    | expr OP_DIVF expr         { $$ = Node::add<ast::OpDivF>($1, $3);}
-    | OP_LPAREN expr OP_RPAREN  { $$ = $2; }
-    | OP_PLUS expr              { $$ = Node::add<ast::SignedNode>(OP_PLUS, $2);}
-    | OP_MINUS expr             { $$ = Node::add<ast::SignedNode>(OP_MINUS, $2);}
+    | L_INTEGER { $$ = Node::add<ast::Integer>(curtoken); }
+    | L_STRING { $$ = Node::add<ast::String>(curtoken); }
+    | OP_LPAREN expr OP_RPAREN { $$ = $2; }
     ;
 
 %%

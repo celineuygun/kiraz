@@ -125,82 +125,82 @@ TEST_F(ParserFixture, string_with_newline) {
 }
 
 TEST_F(ParserFixture, add_signed) {
-    verify_single("1 + -2;", "Add(l=Int(10, 1), r=Signed(OP_MINUS, Int(10, 2)))");
+    verify_single("1 + -2;", "Add(l=Integer(1), r=Signed(OP_MINUS, Integer(2)))");
 }
 
 TEST_F(ParserFixture, signed_add) {
-    verify_single("-1 + 2;", "Add(l=Signed(OP_MINUS, Int(10, 1)), r=Int(10, 2))");
+    verify_single("-1 + 2;", "Add(l=Signed(OP_MINUS, Integer(1)), r=Integer(2))");
 }
 
 TEST_F(ParserFixture, add_mul) {
     verify_single("1 + 2 * 3;",
             "Add("
-            "l=Int(10, 1), "
-            "r=Mult(l=Int(10, 2), r=Int(10, 3))"
+            "l=Integer(1), "
+            "r=Mult(l=Integer(2), r=Integer(3))"
             ")");
 }
 
 TEST_F(ParserFixture, mul_add) {
     verify_single("1 * 2 + 3;",
             "Add("
-            "l=Mult(l=Int(10, 1), r=Int(10, 2)), "
-            "r=Int(10, 3)"
+            "l=Mult(l=Integer(1), r=Integer(2)), "
+            "r=Integer(3)"
             ")");
 }
 
 TEST_F(ParserFixture, add__paren_mul) {
     verify_single("1 + (2 * 3);",
             "Add("
-            "l=Int(10, 1), "
-            "r=Mult(l=Int(10, 2), r=Int(10, 3))"
+            "l=Integer(1), "
+            "r=Mult(l=Integer(2), r=Integer(3))"
             ")");
 }
 
 TEST_F(ParserFixture, paren_mul__add) {
     verify_single("(1 * 2) + 3;",
             "Add("
-            "l=Mult(l=Int(10, 1), r=Int(10, 2)), "
-            "r=Int(10, 3)"
+            "l=Mult(l=Integer(1), r=Integer(2)), "
+            "r=Integer(3)"
             ")");
 }
 
 TEST_F(ParserFixture, mul__paren_add) {
     verify_single("1 * (2 + 3);",
             "Mult("
-            "l=Int(10, 1), "
-            "r=Add(l=Int(10, 2), r=Int(10, 3))"
+            "l=Integer(1), "
+            "r=Add(l=Integer(2), r=Integer(3))"
             ")");
 }
 
 TEST_F(ParserFixture, paren_add__mul) {
     verify_single("(1 + 2) * 3;",
             "Mult("
-            "l=Add(l=Int(10, 1), r=Int(10, 2)), "
-            "r=Int(10, 3)"
+            "l=Add(l=Integer(1), r=Integer(2)), "
+            "r=Integer(3)"
             ")");
 }
 
 TEST_F(ParserFixture, neg_paren_add__mul) {
     verify_single("-(1 + 2) * 3;",
             "Mult("
-            "l=Signed(OP_MINUS, Add(l=Int(10, 1), r=Int(10, 2))), "
-            "r=Int(10, 3)"
+            "l=Signed(OP_MINUS, Add(l=Integer(1), r=Integer(2))), "
+            "r=Integer(3)"
             ")");
 }
 
 TEST_F(ParserFixture, paren_add__mul__paren_add) {
     verify_single("(1 + 2) * (3 + 4);",
             "Mult("
-            "l=Add(l=Int(10, 1), r=Int(10, 2)), "
-            "r=Add(l=Int(10, 3), r=Int(10, 4))"
+            "l=Add(l=Integer(1), r=Integer(2)), "
+            "r=Add(l=Integer(3), r=Integer(4))"
             ")");
 }
 
 TEST_F(ParserFixture, paren_mul__sub__paren_mul) {
     verify_single("(1 * 2) - (3 * 4);",
             "Sub("
-            "l=Mult(l=Int(10, 1), r=Int(10, 2)), "
-            "r=Mult(l=Int(10, 3), r=Int(10, 4))"
+            "l=Mult(l=Integer(1), r=Integer(2)), "
+            "r=Mult(l=Integer(3), r=Integer(4))"
             ")");
 }
 
@@ -209,28 +209,28 @@ TEST_F(ParserFixture, paren_mul__sub__paren_mul__with_iden) {
 }
 
 TEST_F(ParserFixture, assignment) {
-    verify_single("a = 5;", "Assign(l=Id(a), r=Int(10, 5))");
+    verify_single("a = 5;", "Assign(l=Id(a), r=Integer(5))");
 }
 
 TEST_F(ParserFixture, assignment_iden) {
-    verify_single("a = b + 5;", "Assign(l=Id(a), r=Add(l=Id(b), r=Int(10, 5)))");
+    verify_single("a = b + 5;", "Assign(l=Id(a), r=Add(l=Id(b), r=Integer(5)))");
 }
 
 TEST_F(ParserFixture, assignment_iden_neg_2) {
     verify_single(
-            "a = -(b / 5);", "Assign(l=Id(a), r=Signed(OP_MINUS, DivF(l=Id(b), r=Int(10, 5))))");
+            "a = -(b / 5);", "Assign(l=Id(a), r=Signed(OP_MINUS, DivF(l=Id(b), r=Integer(5))))");
 }
 
 TEST_F(ParserFixture, assignment_iden_neg_3) {
     verify_single("a = -(b / 5) + 3;",
             "Assign("
             "l=Id(a), "
-            "r=Add(l=Signed(OP_MINUS, DivF(l=Id(b), r=Int(10, 5))), r=Int(10, 3))"
+            "r=Add(l=Signed(OP_MINUS, DivF(l=Id(b), r=Integer(5))), r=Integer(3))"
             ")");
 }
 
 TEST_F(ParserFixture, let_with_val) {
-    verify_single("let a = 5;", "Let(n=Id(a), i=Int(10, 5))");
+    verify_single("let a = 5;", "Let(n=Id(a), i=Integer(5))");
 }
 
 TEST_F(ParserFixture, let_with_type) {
@@ -238,7 +238,7 @@ TEST_F(ParserFixture, let_with_type) {
 }
 
 TEST_F(ParserFixture, let_with_type_val) {
-    verify_single("let a : Int64 = 5;", "Let(n=Id(a), t=Id(Int64), i=Int(10, 5))");
+    verify_single("let a : Int64 = 5;", "Let(n=Id(a), t=Id(Int64), i=Integer(5))");
 }
 
 TEST_F(ParserFixture, let_invalid) {
@@ -246,29 +246,29 @@ TEST_F(ParserFixture, let_invalid) {
 }
 
 TEST_F(ParserFixture, let_with_stmt) {
-    verify_single("let a = 2 * 3;", "Let(n=Id(a), i=Mult(l=Int(10, 2), r=Int(10, 3)))");
+    verify_single("let a = 2 * 3;", "Let(n=Id(a), i=Mult(l=Integer(2), r=Integer(3)))");
 }
 
 TEST_F(ParserFixture, let_with_stmt_invalid) {
-    verify_single("let a = 2 * 3;", "Let(n=Id(a), i=Mult(l=Int(10, 2), r=Int(10, 3)))");
+    verify_single("let a = 2 * 3;", "Let(n=Id(a), i=Mult(l=Integer(2), r=Integer(3)))");
 }
 
 TEST_F(ParserFixture, func) {
-    verify_single("func f() : T {};", "Func(n=Id(f), a=[], r=Id(T), s=[])");
+    verify_single("func f() : T {}", "Func(n=Id(f), a=[], r=Id(T), s=[])");
 }
 
 TEST_F(ParserFixture, func_args) {
-    verify_single("func f(a1 : A1) : T {};",
-            "Func(n=Id(f), a=FuncArgs([FArg(n=Id(a1), t=Id(A1))]), r=Id(T), s=[])");
+    verify_single("func f(a1 : T) : T {}",
+            "Func(n=Id(f), a=FuncArgs([FArg(n=Id(a1), t=Id(T))]), r=Id(T), s=[])");
 }
 
 TEST_F(ParserFixture, func_args_stmts) {
-    verify_single("func f(a1 : A1) : T { let v : A1 = 5; };",
+    verify_single("func f(a1 : T) : T { let v : T = 5; }",
             "Func("
             "n=Id(f), "
-            "a=FuncArgs([FArg(n=Id(a1), t=Id(A1))]), "
+            "a=FuncArgs([FArg(n=Id(a1), t=Id(T))]), "
             "r=Id(T), "
-            "s=[Let(n=Id(v), t=Id(A1), i=Int(10, 5))]"
+            "s=[Let(n=Id(v), t=Id(T), i=Integer(5))]"
             ")");
 }
 
@@ -309,7 +309,7 @@ TEST_F(ParserFixture, class_method) {
 TEST_F(ParserFixture, class_attr_and_method) {
     verify_single("class A { let a = 5; func f() : B { }; };",
             "Class(n=Id(A), s=CStmtList(["
-            "Let(n=Id(a), i=Int(10, 5)), "
+            "Let(n=Id(a), i=Integer(5)), "
             "Func(n=Id(f), a=[], r=Id(B), s=[])"
             "]))");
 }

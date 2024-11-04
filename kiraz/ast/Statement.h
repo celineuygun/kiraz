@@ -21,40 +21,20 @@ public:
     Module(Node::Ptr statements) : Statement(IDENTIFIER), m_statements(statements) {}
 
     std::string as_string() const override {
-    return fmt::format("Module([{}])", m_statements ? m_statements->as_string() : "No statements");
+    return fmt::format("Module({})", m_statements ? m_statements->as_string() : "No statements");
     }
 
 };
 
-class StatementList : public Statement {
-private:
-    Node::Ptr m_first;
-    Node::Ptr m_next;
-
-public:
-    StatementList(Node::Ptr first, Node::Ptr next) : Statement(IDENTIFIER), m_first(first), m_next(next) {}
-
-    std::string as_string() const override {
-        std::string result;
-        
-        if (m_first) {
-            result += m_first->as_string();
-        }
-        
-        if (m_next) {
-            result += "\n" + m_next->as_string();
-        }
-        
-        return result;
-    }
-};
 
 // TODO change types
 class TypeNode : public Statement {
 private:
     enum enum_type {
         none_type,
+        t_type,
         int_type,
+        int64_type,
         uint_type,
         long_long_type,
         ulong_long_type,
@@ -83,7 +63,9 @@ public:
     }
 
     void initialize_enum_from_string(const std::string &type) {
-        if (type == "int") m_enumType = int_type;
+        if (type == "T") m_enumType = t_type;
+        else if (type == "int") m_enumType = int_type;
+        else if (type == "Int64") m_enumType = int64_type;
         else if (type == "uint") m_enumType = uint_type;
         else if (type == "long") m_enumType = long_long_type;
         else if (type == "ulong") m_enumType = ulong_long_type;
@@ -108,7 +90,7 @@ public:
     }
 
     std::string as_string() const override {
-        return m_type;
+        return fmt::format("Id({})", m_type);
     }
 };
 
@@ -131,7 +113,7 @@ public:
     auto get_name() const { return m_name; }
 
     std::string as_string() const override {
-        return fmt::format("Arg(n={}, t={})", m_name->as_string(), m_type->as_string());
+        return fmt::format("FArg(n={}, t={})", m_name->as_string(), m_type->as_string());
     }
 };
 
@@ -148,20 +130,49 @@ public:
     auto get_next() const { return m_next; }
 
     std::string as_string() const override {
-        std::string result = "FuncArgs([\n\t";
+        std::string result = "FuncArgs([";
         
         if (m_first) {
             result += m_first->as_string();
         }
         
         if (m_next) {
-            result += ",\n\t" + m_next->as_string();
+            result += ", " + m_next->as_string();
         }
         
-        result += "\n  ])";
+        result += "])";
         return result;
     }
 };
+
+class StatementList : public Statement {
+private:
+    Node::Ptr m_first;
+    Node::Ptr m_next;
+
+public:
+    StatementList(Node::Ptr first, Node::Ptr next)
+        : Statement(IDENTIFIER), m_first(first), m_next(next) {}
+
+    auto get_first() const { return m_first; } 
+    auto get_next() const { return m_next; }
+
+    std::string as_string() const override {
+        std::string result = "[";
+
+        if (m_first) {
+            result += m_first->as_string();
+        }
+
+        if (m_next) {
+            result += ", " + m_next->as_string();
+        }
+
+        result += "]";
+        return result;
+    }
+};
+
 
 class FunctionStatement : public Statement {
 private:
@@ -184,11 +195,11 @@ public:
     auto getBody() const { return m_body; }
 
      std::string as_string() const override {
-        return fmt::format("Func(\n  n={},\n  a={},\n  r={},\n  s={}\n)", 
+        return fmt::format("Func(n={}, a={}, r={}, s={})", 
                            m_name->as_string(),
-                           m_parameters ? m_parameters->as_string() : "none", 
-                           m_returnType ? m_returnType->as_string() : "void",
-                           m_body ? m_body->as_string() : "null");
+                           m_parameters ? m_parameters->as_string() : "[]", 
+                           m_returnType ? m_returnType->as_string() : "[]",
+                           m_body ? m_body->as_string() : "[]");
     }
 };
 
@@ -208,9 +219,9 @@ public:
     LetStatement(const Node::Ptr &identifier, const Node::Ptr &type, const Node::Ptr &value)
         : Statement(KW_LET), m_identifier(identifier), m_type(type), m_value(value) {
             assert(identifier);
-            assert(value);
             if (type) {
-                auto typeNode = Node::add<ast::TypeNode>(type->as_string());
+                //auto typeNode = Node::add<ast::TypeNode>(type->as_string());
+                auto typeNode = std::static_pointer_cast<const ast::TypeNode>(type);
                 assert(typeNode && typeNode->is_valid_type());
             } else {
                 m_type = nullptr;
@@ -222,13 +233,15 @@ public:
     auto get_value() const { return m_value; }
 
     std::string as_string() const override {
-        std::string output = fmt::format("Let(\n\tn={},", m_identifier->as_string());
+        std::string output = fmt::format("Let(n={}", m_identifier->as_string());
         
         if (m_type) {
-            output += fmt::format("\n\tt={},", m_type->as_string());
+            output += fmt::format(", t={}", m_type->as_string());
         }
-
-        output += fmt::format("\n\ti={}\n  )", m_value ? m_value->as_string() : "none");
+        if (m_value) {
+            output += fmt::format(", i={}", m_value ? m_value->as_string() : "none");
+        }
+        output += fmt::format(")");
 
         return output;
     }
@@ -251,7 +264,8 @@ public:
             assert(left);
             assert(right);
             if (type) {
-                auto typeNode = Node::add<ast::TypeNode>(type->as_string());
+                // auto typeNode = Node::add<ast::TypeNode>(type->as_string());
+                auto typeNode = std::static_pointer_cast<const ast::TypeNode>(type);
                 assert(typeNode && typeNode->is_valid_type());
             } else {
                 m_type = nullptr;
@@ -262,7 +276,7 @@ public:
     auto get_right() const { return m_right; }
 
     std::string as_string() const override {
-        return fmt::format("Assign(\n  l={},\n  r={})", 
+        return fmt::format("Assign(l={}, r={})", 
                            m_left->as_string(), 
                            m_right->as_string());
     }
