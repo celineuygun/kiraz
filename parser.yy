@@ -17,7 +17,9 @@
 int yyerror(const char *msg);
 extern std::shared_ptr<Token> curtoken;
 extern int yylineno;
-extern std::string identifier_txt;
+
+extern std::stack<std::string> identifierStack;
+std::stack<std::vector<Node::Ptr>> parameterStack;
 %}
 
 %token    IDENTIFIER
@@ -77,8 +79,8 @@ stmts
     ;
 
 stmt
-    : assign_stmt
-    | let_stmt
+    : let_stmt
+    | assign_stmt
     | expr_stmt
     ;
 
@@ -106,12 +108,14 @@ dtype
 let_stmt
     : KW_LET IDENTIFIER OP_ASSIGN expr OP_SCOLON
       { 
-          auto identifier = Node::add<ast::Identifier>(identifier_txt);
+          auto identifier = Node::add<ast::Identifier>(identifierStack.top());
+            identifierStack.pop();
           $$ = Node::add<ast::LetStatement>(identifier, $4);
       }
     | KW_LET IDENTIFIER type_decl OP_ASSIGN expr OP_SCOLON
       { 
-          auto identifier = Node::add<ast::Identifier>(identifier_txt);
+          auto identifier = Node::add<ast::Identifier>(identifierStack.top());
+          identifierStack.pop();
           $$ = Node::add<ast::LetStatement>(identifier, $3, $5);
       }
     ;
@@ -119,7 +123,8 @@ let_stmt
 assign_stmt
     : IDENTIFIER OP_ASSIGN expr OP_SCOLON
     {
-        auto identifier = Node::add<ast::Identifier>(identifier_txt); 
+        auto identifier = Node::add<ast::Identifier>(identifierStack.top());
+        identifierStack.pop();
         $$ = Node::add<ast::AssignmentStatement>(
             identifier,
             $3
@@ -127,7 +132,8 @@ assign_stmt
     }
     | IDENTIFIER type_decl OP_ASSIGN expr OP_SCOLON
     {
-        auto identifier = Node::add<ast::Identifier>(identifier_txt); 
+        auto identifier = Node::add<ast::Identifier>(identifierStack.top());
+        identifierStack.pop();
         $$ = Node::add<ast::AssignmentStatement>(
             identifier,
             $2,
@@ -141,7 +147,10 @@ expr_stmt
     ;
 
 expr
-    : IDENTIFIER                { $$ = Node::add<ast::Identifier>(identifier_txt); }
+    : IDENTIFIER                
+    {   $$ = Node::add<ast::Identifier>(identifierStack.top());
+        identifierStack.pop(); 
+    }
     | L_INTEGER                 { $$ = Node::add<ast::Integer>(curtoken); }
     | expr OP_PLUS expr         { $$ = Node::add<ast::OpAdd>($1, $3); }
     | expr OP_MINUS expr        { $$ = Node::add<ast::OpSub>($1, $3); }

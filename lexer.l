@@ -5,6 +5,7 @@
 %{
 // https://stackoverflow.com/questions/9611682/flexlexer-support-for-unicode/9617585#9617585
 #include "main.h"
+#include <iostream>
 #include <kiraz/token/Boolean.h>
 #include <kiraz/token/Identifier.h>
 #include <kiraz/token/Keyword.h>
@@ -14,7 +15,8 @@
 static auto &colno = Token::colno;
 using namespace token;
 extern std::shared_ptr<Token> curtoken;
-std::string identifier_txt;
+
+std::stack<std::string> identifierStack;
 %}
 
 
@@ -71,7 +73,7 @@ std::string identifier_txt;
 "."                         { colno += yyleng; curtoken = Token::New<OpDot>(); return OP_DOT; }
 "!"                         { colno += yyleng; curtoken = Token::New<OpNot>(); return OP_NOT; }
 
-[a-zA-Z_][0-9a-zA-Z_]*      { colno += yyleng; identifier_txt = yytext; curtoken = Token::New<Identifier>(yytext); return IDENTIFIER; }
+[a-zA-Z_][0-9a-zA-Z_]*      { colno += yyleng; identifierStack.push(yytext); curtoken = Token::New<Identifier>(yytext); return IDENTIFIER; }
 
 [ \t]+                      { colno += yyleng; }
 .                           { colno += yyleng; curtoken = Token::New<Rejected>(yytext); return YYUNDEF; }

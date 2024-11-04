@@ -13,7 +13,6 @@ Integer::Integer(Token::Ptr t) : Node(L_INTEGER) {
         m_value = std::stoll(token_int->get_value(), nullptr, base);
     }
     catch (std::out_of_range &e) {
-        //TODO
         m_value = 0;
     }
 }

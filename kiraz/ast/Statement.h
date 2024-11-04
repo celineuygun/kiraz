@@ -76,6 +76,67 @@ public:
     }
 };
 
+class Parameter : public Node {
+private:
+    Node::Ptr m_name;
+    Node::Ptr m_type;
+
+public:
+    Parameter(const Node::Ptr &name, const Node::Ptr &type)
+        : Node(IDENTIFIER), 
+          m_name(name), 
+          m_type(type) 
+    {
+        assert(name);
+        assert(type);
+    }
+
+    auto get_type() const { return m_type; }
+    auto get_name() const { return m_name; }
+
+    std::string as_string() const override {
+        return fmt::format("Parameter(name={}, type={})", m_name->as_string(), m_type->as_string());
+    }
+};
+
+class FunctionStatement : public Node {
+private:
+    Node::Ptr m_name;
+    Node::Ptr m_returnType;
+    std::vector<Node::Ptr> m_parameters;
+    Node::Ptr m_body;
+
+public:
+    FunctionStatement(Node::Ptr name, Node::Ptr returnType, std::vector<Node::Ptr> parameters, Node::Ptr body)
+        : Node(KW_FUNC), 
+          m_name(name), 
+          m_returnType(returnType),
+          m_parameters(parameters), 
+          m_body(body) {}
+
+    auto getName() const { return m_name; }
+    auto getReturnType() const { return m_returnType; }
+    auto getParameters() const { return m_parameters; }
+    auto getBody() const { return m_body; }
+
+    std::string as_string() const override {
+        std::string param_list = "[";
+        for (const auto &param : m_parameters) {
+            param_list += param->as_string() + ", ";
+        }
+        if (!m_parameters.empty()) {
+            param_list = param_list.substr(0, param_list.size() - 2);
+        }
+        param_list += "]";
+
+        return fmt::format("Function(\n  name={},\n  return_type={},\n  parameters={},\n  body={})", 
+                           m_name->as_string(),
+                           m_returnType ? m_returnType->as_string() : "void",
+                           param_list, 
+                           m_body ? m_body->as_string() : "null");
+    }
+};
+
 class LetStatement : public Statement {
 private:
     Node::Ptr m_identifier;
