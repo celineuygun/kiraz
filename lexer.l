@@ -67,7 +67,6 @@ std::stack<std::string> identifierStack;
 "*"                         { colno += yyleng; curtoken = Token::New<OpMult>(); return OP_MULT; }
 "/"                         { colno += yyleng; curtoken = Token::New<OpDivF>(); return OP_DIVF; }
 ","                         { colno += yyleng; curtoken = Token::New<OpComma>(); return OP_COMMA; }
-"\n"                        { colno += yyleng; curtoken = Token::New<OpNewline>(); return OP_NEWLINE; }
 ":"                         { colno += yyleng; curtoken = Token::New<OpColon>(); return OP_COLON; }
 ";"                         { colno += yyleng; curtoken = Token::New<OpScolon>(); return OP_SCOLON; }
 "."                         { colno += yyleng; curtoken = Token::New<OpDot>(); return OP_DOT; }
@@ -75,5 +74,5 @@ std::stack<std::string> identifierStack;
 
 [a-zA-Z_][0-9a-zA-Z_]*      { colno += yyleng; identifierStack.push(yytext); curtoken = Token::New<Identifier>(yytext); return IDENTIFIER; }
 
-[ \t]+                      { colno += yyleng; }
+[ \n\t]+                    { colno += yyleng; }
 .                           { colno += yyleng; curtoken = Token::New<Rejected>(yytext); return YYUNDEF; }

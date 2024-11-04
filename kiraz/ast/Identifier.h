@@ -20,7 +20,7 @@ public:
     auto get_name() const { return m_name; }
 
     std::string as_string() const override {
-        return fmt::format("Identifier({})", m_name);
+        return fmt::format("Id({})", m_name);
     }
 };
 

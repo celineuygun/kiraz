@@ -20,8 +20,8 @@ public:
         : Node(L_INTEGER), m_operator(op), m_operand(operand) {}
 
     std::string as_string() const override {
-        //return fmt::format("Integer({}, {})", m_operator, m_operand->as_string());
-        return fmt::format("Integer({}, {})", operator_to_string(m_operator), m_operand->as_string());
+        //return fmt::format("Signed({}, {})", m_operator, m_operand->as_string());
+        return fmt::format("Signed({}, {})", operator_to_string(m_operator), m_operand->as_string());
     }
 
 private:
@@ -30,8 +30,8 @@ private:
 
     std::string operator_to_string(int op) const {
         switch (op) {
-            case OP_PLUS: return "+";
-            case OP_MINUS: return "-";
+            case OP_PLUS: return "OP_PLUS";
+            case OP_MINUS: return "OP_MINUS";
             default: return fmt::format("UnknownOperator({})", op);
         }
     }

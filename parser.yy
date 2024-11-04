@@ -19,7 +19,6 @@ extern std::shared_ptr<Token> curtoken;
 extern int yylineno;
 
 extern std::stack<std::string> identifierStack;
-std::stack<std::vector<Node::Ptr>> parameterStack;
 %}
 
 %token    IDENTIFIER
@@ -70,16 +69,17 @@ std::stack<std::vector<Node::Ptr>> parameterStack;
 %%
 
 prog
-    : stmts
+    : stmts       {$$ = Node::add<ast::Module>($1);}
     ;
 
 stmts
-    : stmt stmts
-    | /* empty */
+    : stmt stmts  { $$ = Node::add<ast::StatementList>($1, $2); }
+    | /* empty */ { $$ = nullptr; }
     ;
 
 stmt
-    : let_stmt
+    : func_stmt
+    | let_stmt
     | assign_stmt
     | expr_stmt
     ;
@@ -103,6 +103,30 @@ dtype
     | STRING      { $$ = Node::add<ast::TypeNode>("string"); }
     | POINTER     { $$ = Node::add<ast::TypeNode>("pointer"); }
     | CUSTOM      { $$ = Node::add<ast::TypeNode>("custom"); }
+    ;
+
+func_stmt
+    : KW_FUNC IDENTIFIER OP_LPAREN param_list OP_RPAREN type_decl OP_LBRACE stmts OP_RBRACE
+    {
+        auto identifier = Node::add<ast::Identifier>(identifierStack.top());
+        identifierStack.pop();
+        $$ = Node::add<ast::FunctionStatement>(identifier, $4, $6, $8);
+    }
+    ;
+
+param_list
+    : /* empty */                   { $$ = nullptr; }
+    | param                         { $$ = $1; }
+    | param_list OP_COMMA param     { $$ = Node::add<ast::ParameterList>($1, $3); }
+    ;
+
+param
+    : IDENTIFIER type_decl
+      {
+          auto identifier = Node::add<ast::Identifier>(identifierStack.top());
+          identifierStack.pop();
+          $$ = Node::add<ast::Parameter>(identifier, $2); 
+      }
     ;
 
 let_stmt

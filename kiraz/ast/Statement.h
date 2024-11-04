@@ -13,8 +13,44 @@ protected:
     explicit Statement(int type) : Node(type) {}
 };
 
+class Module : public Statement {
+private:
+    Node::Ptr m_statements;
+
+public:
+    Module(Node::Ptr statements) : Statement(IDENTIFIER), m_statements(statements) {}
+
+    std::string as_string() const override {
+    return fmt::format("Module([{}])", m_statements ? m_statements->as_string() : "No statements");
+    }
+
+};
+
+class StatementList : public Statement {
+private:
+    Node::Ptr m_first;
+    Node::Ptr m_next;
+
+public:
+    StatementList(Node::Ptr first, Node::Ptr next) : Statement(IDENTIFIER), m_first(first), m_next(next) {}
+
+    std::string as_string() const override {
+        std::string result;
+        
+        if (m_first) {
+            result += m_first->as_string();
+        }
+        
+        if (m_next) {
+            result += "\n" + m_next->as_string();
+        }
+        
+        return result;
+    }
+};
+
 // TODO change types
-class TypeNode : public Node {
+class TypeNode : public Statement {
 private:
     enum enum_type {
         none_type,
@@ -41,7 +77,7 @@ private:
 
 public:
     TypeNode(const std::string &type) 
-        : Node(IDENTIFIER), m_type(type) {
+        : Statement(IDENTIFIER), m_type(type) {
         
         initialize_enum_from_string(type);
     }
@@ -76,14 +112,14 @@ public:
     }
 };
 
-class Parameter : public Node {
+class Parameter : public Statement {
 private:
     Node::Ptr m_name;
     Node::Ptr m_type;
 
 public:
     Parameter(const Node::Ptr &name, const Node::Ptr &type)
-        : Node(IDENTIFIER), 
+        : Statement(IDENTIFIER), 
           m_name(name), 
           m_type(type) 
     {
@@ -95,20 +131,48 @@ public:
     auto get_name() const { return m_name; }
 
     std::string as_string() const override {
-        return fmt::format("Parameter(name={}, type={})", m_name->as_string(), m_type->as_string());
+        return fmt::format("Arg(n={}, t={})", m_name->as_string(), m_type->as_string());
     }
 };
 
-class FunctionStatement : public Node {
+class ParameterList : public Statement {
+private:
+    Node::Ptr m_first;
+    Node::Ptr m_next;
+
+public:
+    ParameterList(Node::Ptr first, Node::Ptr next)
+        : Statement(IDENTIFIER), m_first(first), m_next(next) {}
+
+    auto get_first() const { return m_first; }
+    auto get_next() const { return m_next; }
+
+    std::string as_string() const override {
+        std::string result = "FuncArgs([\n\t";
+        
+        if (m_first) {
+            result += m_first->as_string();
+        }
+        
+        if (m_next) {
+            result += ",\n\t" + m_next->as_string();
+        }
+        
+        result += "\n  ])";
+        return result;
+    }
+};
+
+class FunctionStatement : public Statement {
 private:
     Node::Ptr m_name;
     Node::Ptr m_returnType;
-    std::vector<Node::Ptr> m_parameters;
+    Node::Ptr m_parameters;
     Node::Ptr m_body;
 
 public:
-    FunctionStatement(Node::Ptr name, Node::Ptr returnType, std::vector<Node::Ptr> parameters, Node::Ptr body)
-        : Node(KW_FUNC), 
+    FunctionStatement(Node::Ptr name, Node::Ptr parameters, Node::Ptr returnType, Node::Ptr body)
+        : Statement(KW_FUNC), 
           m_name(name), 
           m_returnType(returnType),
           m_parameters(parameters), 
@@ -119,20 +183,11 @@ public:
     auto getParameters() const { return m_parameters; }
     auto getBody() const { return m_body; }
 
-    std::string as_string() const override {
-        std::string param_list = "[";
-        for (const auto &param : m_parameters) {
-            param_list += param->as_string() + ", ";
-        }
-        if (!m_parameters.empty()) {
-            param_list = param_list.substr(0, param_list.size() - 2);
-        }
-        param_list += "]";
-
-        return fmt::format("Function(\n  name={},\n  return_type={},\n  parameters={},\n  body={})", 
+     std::string as_string() const override {
+        return fmt::format("Func(\n  n={},\n  a={},\n  r={},\n  s={}\n)", 
                            m_name->as_string(),
+                           m_parameters ? m_parameters->as_string() : "none", 
                            m_returnType ? m_returnType->as_string() : "void",
-                           param_list, 
                            m_body ? m_body->as_string() : "null");
     }
 };
@@ -167,13 +222,13 @@ public:
     auto get_value() const { return m_value; }
 
     std::string as_string() const override {
-        std::string output = fmt::format("Let(\n  n={},", m_identifier->as_string());
+        std::string output = fmt::format("Let(\n\tn={},", m_identifier->as_string());
         
         if (m_type) {
-            output += fmt::format("\n  t={},", m_type->as_string());
+            output += fmt::format("\n\tt={},", m_type->as_string());
         }
 
-        output += fmt::format("\n  i={})", m_value ? m_value->as_string() : "none");
+        output += fmt::format("\n\ti={}\n  )", m_value ? m_value->as_string() : "none");
 
         return output;
     }
