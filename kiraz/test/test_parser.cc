@@ -356,7 +356,7 @@ TEST_F(ParserFixture, call) {
 }
 
 TEST_F(ParserFixture, module) {
-    verify_root("import a; class B {};", "Module([Import(Id(a)), Class(n=Id(B), s=[])])");
+    verify_root("import a; class C {};", "Module([Import(Id(a)), Class(n=Id(C), s=[])])");
 }
 
 TEST_F(ParserFixture, if_then_empty) {

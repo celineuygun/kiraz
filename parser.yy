@@ -90,12 +90,21 @@ stmts
     ;
 
 stmt
-    : class_stmt
+    : import_stmt
+    | class_stmt
     | func_stmt
     | let_stmt
     | assign_stmt
+    | call_stmt
     | expr_stmt
     | OP_LPAREN stmt OP_RPAREN { $$ = $2; }
+    ;
+
+import_stmt
+    : KW_IMPORT identifier OP_SCOLON
+    {
+        $$ = Node::add<ast::ImportStatement>($2);
+    }
     ;
 
 type_decl
@@ -125,11 +134,9 @@ dtype
     ;
 
 class_stmt
-    : KW_CLASS IDENTIFIER OP_LBRACE class_body OP_RBRACE OP_SCOLON
+    : KW_CLASS identifier OP_LBRACE class_body OP_RBRACE OP_SCOLON
     {
-        auto identifier = Node::add<ast::Identifier>(identifierStack.top());
-        identifierStack.pop();
-        $$ = Node::add<ast::ClassStatement>(identifier, $4);
+        $$ = Node::add<ast::ClassStatement>($2, $4);
     }
     ;
 
@@ -143,13 +150,10 @@ class_member
     | func_stmt
     ;
 
-
 func_stmt
-    : KW_FUNC IDENTIFIER OP_LPAREN param_list OP_RPAREN type_decl OP_LBRACE stmts OP_RBRACE OP_SCOLON
+    : KW_FUNC identifier OP_LPAREN param_list OP_RPAREN type_decl OP_LBRACE stmts OP_RBRACE OP_SCOLON
     {
-        auto identifier = Node::add<ast::Identifier>(identifierStack.top());
-        identifierStack.pop();
-        $$ = Node::add<ast::FunctionStatement>(identifier, $4, $6, $8);
+        $$ = Node::add<ast::FunctionStatement>($2, $4, $6, $8);
     }
     ;
     
@@ -160,59 +164,69 @@ param_list
     ;
 
 param
-    : IDENTIFIER type_decl
+    : identifier type_decl
       {
-          auto identifier = Node::add<ast::Identifier>(identifierStack.top());
-          identifierStack.pop();
-          $$ = Node::add<ast::Parameter>(identifier, $2); 
+          $$ = Node::add<ast::Parameter>($1, $2); 
+      }
+    | identifier
+      {
+          $$ = Node::add<ast::Parameter>($1, nullptr); 
       }
     ;
 
 let_stmt
-    : KW_LET IDENTIFIER OP_ASSIGN expr OP_SCOLON
-      { 
-          auto identifier = Node::add<ast::Identifier>(identifierStack.top());
-            identifierStack.pop();
-          $$ = Node::add<ast::LetStatement>(identifier, $4);
+    : KW_LET identifier OP_ASSIGN expr OP_SCOLON
+      {
+          $$ = Node::add<ast::LetStatement>($2, $4);
       }
-    | KW_LET IDENTIFIER type_decl OP_ASSIGN expr OP_SCOLON
-      { 
-          auto identifier = Node::add<ast::Identifier>(identifierStack.top());
-          identifierStack.pop();
-          $$ = Node::add<ast::LetStatement>(identifier, $3, $5);
+    | KW_LET identifier type_decl OP_ASSIGN expr OP_SCOLON
+      {
+          $$ = Node::add<ast::LetStatement>($2, $3, $5);
       }
-    | KW_LET IDENTIFIER type_decl OP_SCOLON
-      { 
-          auto identifier = Node::add<ast::Identifier>(identifierStack.top());
-          identifierStack.pop();
-          $$ = Node::add<ast::LetStatement>(identifier, $3, nullptr);
+    | KW_LET identifier type_decl OP_SCOLON
+      {
+          $$ = Node::add<ast::LetStatement>($2, $3, nullptr);
       }
     ;
 
 assign_stmt
-    : IDENTIFIER OP_ASSIGN expr OP_SCOLON
+    : identifier OP_ASSIGN expr OP_SCOLON
     {
-        auto identifier = Node::add<ast::Identifier>(identifierStack.top());
-        identifierStack.pop();
         $$ = Node::add<ast::AssignmentStatement>(
-            identifier,
+            $1,
             $3
         );
     }
-    | IDENTIFIER type_decl OP_ASSIGN expr OP_SCOLON
+    | identifier type_decl OP_ASSIGN expr OP_SCOLON
     {
-        auto identifier = Node::add<ast::Identifier>(identifierStack.top());
-        identifierStack.pop();
         $$ = Node::add<ast::AssignmentStatement>(
-            identifier,
+            $1,
             $2,
             $4
         );
     }
     ;
 
+call_stmt
+    : dot_expr OP_LPAREN param_list OP_RPAREN OP_SCOLON
+    {
+        $$ = Node::add<ast::CallStatement>($1, $3);
+    }
+    ;
+
+dot_expr
+    : identifier OP_DOT identifier 
+    { 
+        $$ = Node::add<ast::OpDot>($1, $3); 
+    }
+    | dot_expr OP_DOT identifier 
+    { 
+        $$ = Node::add<ast::OpDot>($1, $3); 
+    }
+    ;
+
 expr_stmt
-    : expr OP_SCOLON           { $$ = $1; }
+    : expr OP_SCOLON          { $$ = $1; }
     ;
 
 expr
@@ -242,14 +256,19 @@ negative
     ;
 
 atom
-    : IDENTIFIER 
-    { 
-        $$ = Node::add<ast::Identifier>(identifierStack.top());
-        identifierStack.pop(); 
-    }
+    : identifier               { $$ = $1; }
     | L_INTEGER                { $$ = Node::add<ast::Integer>(curtoken); }
     | L_STRING                 { $$ = Node::add<ast::String>(curtoken); }
     | OP_LPAREN expr OP_RPAREN { $$ = $2; }
+    ;
+
+identifier
+    : IDENTIFIER
+    {
+        auto identifier = Node::add<ast::Identifier>(identifierStack.top());
+        identifierStack.pop();
+        $$ = identifier;
+    }
     ;
 
 %%

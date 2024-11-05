@@ -21,7 +21,7 @@ public:
     Module(Node::Ptr statements) : Statement(IDENTIFIER), m_statements(statements) {}
 
     std::string as_string() const override {
-    return fmt::format("Module({})", m_statements ? m_statements->as_string() : "No statements");
+    return fmt::format("Module([{}])", m_statements ? m_statements->as_string() : "");
     }
 
 };
@@ -100,6 +100,50 @@ public:
     }
 };
 
+class ImportStatement : public Statement {
+private:
+    Node::Ptr m_identifier;
+
+public:
+    ImportStatement(Node::Ptr identifier)
+        : Statement(KW_IMPORT), m_identifier(identifier) {
+        assert(identifier);
+    }
+
+    auto get_identifier() const { return m_identifier; }
+
+    std::string as_string() const override {
+        return fmt::format("Import({})", m_identifier->as_string());
+    }
+};
+
+class CallStatement : public Statement {
+private:
+    Node::Ptr m_callee;
+    Node::Ptr m_arguments;
+
+public:
+    CallStatement(Node::Ptr callee, Node::Ptr arguments)
+        : Statement(IDENTIFIER), m_callee(callee), m_arguments(arguments) {}
+
+    auto getCallee() const { return m_callee; }
+    auto getArguments() const { return m_arguments; }
+
+    std::string as_string() const override {
+        std::string params_string;
+
+        if (m_arguments) {
+            params_string = fmt::format("FuncArgs([{}])", m_arguments->as_string());
+        } else {
+            params_string = "FuncArgs([])";
+        }
+
+        return fmt::format("Call(n={}, a={})", m_callee->as_string(), params_string);
+    }
+
+};
+
+
 class ClassStatement : public Statement {
 private:
     Node::Ptr m_name;
@@ -118,7 +162,6 @@ public:
                            m_members ? m_members->as_string() : "");
     }
 };
-
 
 class ClassBody : public Statement {
 private:
@@ -162,14 +205,22 @@ public:
           m_type(type) 
     {
         assert(name);
-        assert(type);
     }
 
     auto get_type() const { return m_type; }
     auto get_name() const { return m_name; }
 
     std::string as_string() const override {
-        return fmt::format("FArg(n={}, t={})", m_name->as_string(), m_type->as_string());
+        std::string result;
+        if (m_type) {
+            result = fmt::format("FArg(n={}, t={})", m_name->as_string(), m_type->as_string());
+        }
+    
+        else {
+            result = fmt::format("{}", m_name->as_string());
+        }
+
+        return result;
     }
 };
 
@@ -213,7 +264,7 @@ public:
     auto get_next() const { return m_next; }
 
     std::string as_string() const override {
-        std::string result = "[";
+        std::string result = "";
 
         if (m_first) {
             result += m_first->as_string();
@@ -223,7 +274,6 @@ public:
             result += ", " + m_next->as_string();
         }
 
-        result += "]";
         return result;
     }
 };
@@ -258,11 +308,11 @@ public:
             params_string = "[]";
         }
 
-        return fmt::format("Func(n={}, a={}, r={}, s={})", 
+        return fmt::format("Func(n={}, a={}, r={}, s=[{}])", 
                            m_name->as_string(),
                            params_string,
                            m_returnType ? m_returnType->as_string() : "[]",
-                           m_body ? m_body->as_string() : "[]");
+                           m_body ? m_body->as_string() : "");
     }
 };
 

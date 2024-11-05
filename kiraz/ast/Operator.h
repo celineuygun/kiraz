@@ -137,6 +137,26 @@ public:
     }
 };
 
+class OpDot : public Node {
+private:
+    Node::Ptr m_left;
+    Node::Ptr m_right;
+
+public:
+    OpDot(Node::Ptr &left, Node::Ptr &right)
+        : Node(OP_DOT), m_left(left), m_right(right) {
+            assert(left);
+            assert(right);
+        }
+
+    auto getLeft() const { return m_left; }
+    auto getRight() const { return m_right; }
+
+    std::string as_string() const override {
+        return fmt::format("Dot(l={}, r={})", m_left->as_string(), m_right->as_string());
+    }
+};
+
 }
 
 #endif // KIRAZ_AST_OPERATOR_H
