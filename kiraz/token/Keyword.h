@@ -32,6 +32,12 @@ public:
     std::string as_string() const override { return "KW_IF"; }
 };
 
+class KeywordElse : public Keyword {
+public:
+    KeywordElse() : Keyword(KW_ELSE) {}
+    std::string as_string() const override { return "KW_ELSE"; }
+};
+
 class KeywordWhile : public Keyword {
 public:
     KeywordWhile() : Keyword(KW_WHILE) {}

@@ -395,6 +395,35 @@ public:
     }
 };
 
+class IfStatement : public Statement {
+private:
+    Node::Ptr m_condition;
+    Node::Ptr m_thenBranch;
+    Node::Ptr m_elseBranch;
+
+public:
+    // Constructor for IfStatement with optional else branch
+    IfStatement(Node::Ptr condition, Node::Ptr thenBranch, Node::Ptr elseBranch = nullptr)
+        : Statement(IDENTIFIER), m_condition(condition), m_thenBranch(thenBranch), m_elseBranch(elseBranch) {
+        assert(condition);  // Condition is required
+    }
+
+    auto get_condition() const { return m_condition; }
+    auto get_then_branch() const { return m_thenBranch; }
+    auto get_else_branch() const { return m_elseBranch; }
+
+    std::string as_string() const override {
+        std::string thenString = m_thenBranch ? m_thenBranch->as_string() : "";
+        
+        std::string elseString = m_elseBranch ? m_elseBranch->as_string() : "";
+
+        return fmt::format("If(?={}, then=[{}], else=[{}])", 
+                           m_condition->as_string(), 
+                           thenString, 
+                           elseString);
+    }
+};
+
 }
 
 #endif // KIRAZ_AST_STATEMENT_H

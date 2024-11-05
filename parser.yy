@@ -55,6 +55,7 @@ extern std::stack<std::string> identifierStack;
 %token DOUBLE CSTRING STRING POINTER CUSTOM 
 
 %token    KW_IF
+%token    KW_ELSE
 %token    KW_FUNC
 %token    KW_WHILE
 %token    KW_CLASS
@@ -96,6 +97,7 @@ stmt
     | let_stmt
     | assign_stmt
     | call_stmt
+    | if_stmt
     | expr_stmt
     | OP_LPAREN stmt OP_RPAREN { $$ = $2; }
     ;
@@ -221,7 +223,26 @@ dot_expr
     }
     | dot_expr OP_DOT identifier 
     { 
-        $$ = Node::add<ast::OpDot>($1, $3); 
+        $$ = Node::add<ast::OpDot>($1, $3);  
+    }
+    ;
+
+if_stmt
+    : if OP_SCOLON          { $$ = $1; }
+    ;
+
+if
+    : KW_IF OP_LPAREN expr OP_RPAREN OP_LBRACE stmts OP_RBRACE
+    {
+        $$ = Node::add<ast::IfStatement>($3, $6, nullptr);
+    }
+    | KW_IF OP_LPAREN expr OP_RPAREN OP_LBRACE stmts OP_RBRACE KW_ELSE OP_LBRACE stmts OP_RBRACE
+    {
+        $$ = Node::add<ast::IfStatement>($3, $6, $10);
+    }
+    | KW_IF OP_LPAREN expr OP_RPAREN OP_LBRACE stmts OP_RBRACE KW_ELSE if
+    {
+        $$ = Node::add<ast::IfStatement>($3, $6, $9); 
     }
     ;
 

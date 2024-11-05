@@ -394,7 +394,7 @@ TEST_F(ParserFixture, if_then_empty_else_nested_if) {
 
 TEST_F(ParserFixture, if_then_stuff_else_if_stuff_else_stuff) {
     verify_single("if (a) { s1; } else if (b) { s2; } else { s3; };",
-            "If(?=Id(a), then=[Id(s1)], else=If(?=Id(b), then=[Id(s2)], else=[Id(s3)]))");
+            "If(?=Id(a), then=[Id(s1)], else=[If(?=Id(b), then=[Id(s2)], else=[Id(s3)])])");
 }
 
 TEST_F(ParserFixture, while_repeat_empty) {

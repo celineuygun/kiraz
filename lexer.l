@@ -46,6 +46,7 @@ std::stack<std::string> identifierStack;
 "import"                    { colno += yyleng; curtoken = Token::New<KeywordImport>(); return KW_IMPORT; }
 "func"                      { colno += yyleng; curtoken = Token::New<KeywordFunc>(); return KW_FUNC; }
 "if"                        { colno += yyleng; curtoken = Token::New<KeywordIf>(); return KW_IF; }
+"else"                      { colno += yyleng; curtoken = Token::New<KeywordIf>(); return KW_ELSE; }
 "while"                     { colno += yyleng; curtoken = Token::New<KeywordWhile>(); return KW_WHILE; }
 "let"                       { colno += yyleng; curtoken = Token::New<KeywordLet>(); return KW_LET; }
 "class"                     { colno += yyleng; curtoken = Token::New<KeywordClass>(); return KW_CLASS; }
