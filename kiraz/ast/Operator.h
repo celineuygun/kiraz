@@ -42,23 +42,23 @@ public:
             break;
 
         case OP_EQUALS:
-            opstr = "Equals"; 
+            opstr = "OpEq"; 
         break;
         
         case OP_GT: 
-            opstr = "GT"; 
+            opstr = "OpGt"; 
             break;
         
         case OP_LT: 
-            opstr = "LT"; 
+            opstr = "OpLt"; 
             break;
         
         case OP_GE: 
-            opstr = "GE"; 
+            opstr = "OpGe"; 
             break;
         
         case OP_LE: 
-            opstr = "LE"; 
+            opstr = "OpLe"; 
             break;
         
         default:
@@ -134,24 +134,6 @@ public:
 
     std::string as_string() const override {
         return fmt::format("Assign({}, {})", m_left->as_string(), m_right->as_string());
-    }
-};
-
-// TODO
-class OpReturn : public Node {
-private:
-    Node::Ptr m_returnValue;
-
-public:
-    OpReturn(const Node::Ptr &returnValue) 
-        : Node(OP_RETURNS), m_returnValue(returnValue) {
-            assert(returnValue);
-        }
-
-    auto get_return_value() const { return m_returnValue; }
-
-    std::string as_string() const override {
-        return fmt::format("Return({})", m_returnValue->as_string());
     }
 };
 

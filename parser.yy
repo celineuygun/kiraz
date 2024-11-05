@@ -51,7 +51,7 @@ extern std::stack<std::string> identifierStack;
 %token    L_TRUE
 %token    L_FALSE
 
-%token T INT INT64 UINT LONG ULONG INT128 UINT128 BOOL CHAR FLOAT 
+%token T A1 INT INT64 UINT LONG ULONG INT128 UINT128 BOOL CHAR FLOAT 
 %token DOUBLE CSTRING STRING POINTER CUSTOM 
 
 %token    KW_IF
@@ -64,7 +64,8 @@ extern std::stack<std::string> identifierStack;
 %right    OP_ASSIGN
 %left     OP_PLUS OP_MINUS
 %left     OP_MULT OP_DIVF
-%left     UNARY
+%left     OP_EQUALS
+%left     OP_GT OP_GE OP_LT OP_LE
 
 %token    REJECTED
 
@@ -102,6 +103,7 @@ type_decl
 
 dtype
     : T           { $$ = Node::add<ast::TypeNode>("T"); }
+    | A1          { $$ = Node::add<ast::TypeNode>("A1"); }
     | INT         { $$ = Node::add<ast::TypeNode>("int"); }
     | INT64       { $$ = Node::add<ast::TypeNode>("Int64"); }
     | UINT        { $$ = Node::add<ast::TypeNode>("uint"); }
@@ -120,7 +122,7 @@ dtype
     ;
 
 func_stmt
-    : KW_FUNC IDENTIFIER OP_LPAREN param_list OP_RPAREN type_decl OP_LBRACE stmts OP_RBRACE
+    : KW_FUNC IDENTIFIER OP_LPAREN param_list OP_RPAREN type_decl OP_LBRACE stmts OP_RBRACE OP_SCOLON
     {
         auto identifier = Node::add<ast::Identifier>(identifierStack.top());
         identifierStack.pop();
@@ -192,6 +194,11 @@ expr_stmt
 
 expr
     : additive
+    | expr OP_EQUALS additive { $$ = Node::add<ast::OpEquals>($1, $3); }
+    | expr OP_GT additive { $$ = Node::add<ast::OpGT>($1, $3); }
+    | expr OP_GE additive { $$ = Node::add<ast::OpGE>($1, $3); }
+    | expr OP_LT additive { $$ = Node::add<ast::OpLT>($1, $3); }
+    | expr OP_LE additive { $$ = Node::add<ast::OpLE>($1, $3); }
     ;
 
 additive

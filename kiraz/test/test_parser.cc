@@ -289,19 +289,19 @@ TEST_F(ParserFixture, let_with_stmt_invalid) {
 }
 
 TEST_F(ParserFixture, func) {
-    verify_single("func f() : T {}", "Func(n=Id(f), a=[], r=Id(T), s=[])");
+    verify_single("func f() : T {};", "Func(n=Id(f), a=[], r=Id(T), s=[])");
 }
 
 TEST_F(ParserFixture, func_args) {
-    verify_single("func f(a1 : T) : T {}",
-            "Func(n=Id(f), a=FuncArgs([FArg(n=Id(a1), t=Id(T))]), r=Id(T), s=[])");
+    verify_single("func f(a1 : A1) : T {};",
+            "Func(n=Id(f), a=FuncArgs([FArg(n=Id(a1), t=Id(A1))]), r=Id(T), s=[])");
 }
 
 TEST_F(ParserFixture, func_args_stmts) {
-    verify_single("func f(a1 : T) : T { let v : T = 5; }",
+    verify_single("func f(a1 : A1) : T { let v : A1 = 5; };",
             "Func("
             "n=Id(f), "
-            "a=FuncArgs([FArg(n=Id(a1), t=Id(T))]), "
+            "a=FuncArgs([FArg(n=Id(a1), t=Id(A1))]), "
             "r=Id(T), "
             "s=[Let(n=Id(v), t=Id(A1), i=Int(5))]"
             ")");
