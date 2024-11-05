@@ -23,6 +23,8 @@ std::stack<std::string> identifierStack;
 %%
 
 "T"          { colno += yyleng; return T; }
+"I"          { colno += yyleng; return I; }
+"B"          { colno += yyleng; return B; }
 "A1"         { colno += yyleng; return A1; }
 "int"        { colno += yyleng; return INT; }
 "Int64"      { colno += yyleng; return INT64; }

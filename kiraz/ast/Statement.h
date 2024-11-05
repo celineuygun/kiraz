@@ -33,6 +33,8 @@ private:
     enum enum_type {
         none_type,
         t_type,
+        i_type,
+        b_type,
         a1_type,
         int_type,
         int64_type,
@@ -65,6 +67,8 @@ public:
 
     void initialize_enum_from_string(const std::string &type) {
         if (type == "T") m_enumType = t_type;
+        else if (type == "I") m_enumType = i_type;
+        else if (type == "B") m_enumType = b_type;
         else if (type == "A1") m_enumType = a1_type;
         else if (type == "int") m_enumType = int_type;
         else if (type == "Int64") m_enumType = int64_type;
@@ -93,6 +97,56 @@ public:
 
     std::string as_string() const override {
         return fmt::format("Id({})", m_type);
+    }
+};
+
+class ClassStatement : public Statement {
+private:
+    Node::Ptr m_name;
+    Node::Ptr m_members; // Contains both methods and member variables
+
+public:
+    ClassStatement(Node::Ptr name, Node::Ptr members)
+        : Statement(KW_CLASS), m_name(name), m_members(members) {}
+
+    auto getName() const { return m_name; }
+    auto getMembers() const { return m_members; }
+
+    std::string as_string() const override {
+        return fmt::format("Class(n={}, s=[{}])", 
+                           m_name->as_string(), 
+                           m_members ? m_members->as_string() : "");
+    }
+};
+
+
+class ClassBody : public Statement {
+private:
+    Node::Ptr m_first;
+    Node::Ptr m_next;
+
+public:
+    ClassBody(Node::Ptr first = nullptr, Node::Ptr next = nullptr)
+        : Statement(IDENTIFIER), m_first(first), m_next(next) {}
+
+    void setFirst(Node::Ptr first) { m_first = first; }
+    void setNext(Node::Ptr next) { m_next = next; }
+
+    auto getFirst() const { return m_first; }
+    auto getNext() const { return m_next; }
+
+    std::string as_string() const override {
+        std::string result = "";
+
+        if (m_first) {
+            result += m_first->as_string();
+        }
+
+        if (m_next) {
+            result += ", " + m_next->as_string();
+        }
+
+        return result;
     }
 };
 
@@ -132,7 +186,7 @@ public:
     auto get_next() const { return m_next; }
 
     std::string as_string() const override {
-        std::string result = "FuncArgs([";
+        std::string result = "";
         
         if (m_first) {
             result += m_first->as_string();
@@ -142,7 +196,6 @@ public:
             result += ", " + m_next->as_string();
         }
         
-        result += "])";
         return result;
     }
 };
@@ -197,9 +250,17 @@ public:
     auto getBody() const { return m_body; }
 
      std::string as_string() const override {
+        std::string params_string;
+
+        if (m_parameters) {
+            params_string = fmt::format("FuncArgs([{}])", m_parameters->as_string());
+        } else {
+            params_string = "[]";
+        }
+
         return fmt::format("Func(n={}, a={}, r={}, s={})", 
                            m_name->as_string(),
-                           m_parameters ? m_parameters->as_string() : "[]", 
+                           params_string,
                            m_returnType ? m_returnType->as_string() : "[]",
                            m_body ? m_body->as_string() : "[]");
     }

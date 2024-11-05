@@ -51,7 +51,7 @@ extern std::stack<std::string> identifierStack;
 %token    L_TRUE
 %token    L_FALSE
 
-%token T A1 INT INT64 UINT LONG ULONG INT128 UINT128 BOOL CHAR FLOAT 
+%token T I B A1 INT INT64 UINT LONG ULONG INT128 UINT128 BOOL CHAR FLOAT 
 %token DOUBLE CSTRING STRING POINTER CUSTOM 
 
 %token    KW_IF
@@ -90,7 +90,8 @@ stmts
     ;
 
 stmt
-    : func_stmt
+    : class_stmt
+    | func_stmt
     | let_stmt
     | assign_stmt
     | expr_stmt
@@ -103,6 +104,8 @@ type_decl
 
 dtype
     : T           { $$ = Node::add<ast::TypeNode>("T"); }
+    | I           { $$ = Node::add<ast::TypeNode>("I"); }
+    | B           { $$ = Node::add<ast::TypeNode>("B"); }
     | A1          { $$ = Node::add<ast::TypeNode>("A1"); }
     | INT         { $$ = Node::add<ast::TypeNode>("int"); }
     | INT64       { $$ = Node::add<ast::TypeNode>("Int64"); }
@@ -120,6 +123,26 @@ dtype
     | POINTER     { $$ = Node::add<ast::TypeNode>("pointer"); }
     | CUSTOM      { $$ = Node::add<ast::TypeNode>("custom"); }
     ;
+
+class_stmt
+    : KW_CLASS IDENTIFIER OP_LBRACE class_body OP_RBRACE OP_SCOLON
+    {
+        auto identifier = Node::add<ast::Identifier>(identifierStack.top());
+        identifierStack.pop();
+        $$ = Node::add<ast::ClassStatement>(identifier, $4);
+    }
+    ;
+
+class_body
+    : class_member class_body { $$ = Node::add<ast::ClassBody>($1, $2); }
+    | /* empty */             { $$ = nullptr; }
+    ;
+
+class_member
+    : let_stmt
+    | func_stmt
+    ;
+
 
 func_stmt
     : KW_FUNC IDENTIFIER OP_LPAREN param_list OP_RPAREN type_decl OP_LBRACE stmts OP_RBRACE OP_SCOLON
@@ -195,21 +218,21 @@ expr_stmt
 expr
     : additive
     | expr OP_EQUALS additive { $$ = Node::add<ast::OpEquals>($1, $3); }
-    | expr OP_GT additive { $$ = Node::add<ast::OpGT>($1, $3); }
-    | expr OP_GE additive { $$ = Node::add<ast::OpGE>($1, $3); }
-    | expr OP_LT additive { $$ = Node::add<ast::OpLT>($1, $3); }
-    | expr OP_LE additive { $$ = Node::add<ast::OpLE>($1, $3); }
+    | expr OP_GT additive     { $$ = Node::add<ast::OpGT>($1, $3); }
+    | expr OP_GE additive     { $$ = Node::add<ast::OpGE>($1, $3); }
+    | expr OP_LT additive     { $$ = Node::add<ast::OpLT>($1, $3); }
+    | expr OP_LE additive     { $$ = Node::add<ast::OpLE>($1, $3); }
     ;
 
 additive
-    : additive OP_PLUS multiplicative { $$ = Node::add<ast::OpAdd>($1, $3); }
+    : additive OP_PLUS multiplicative  { $$ = Node::add<ast::OpAdd>($1, $3); }
     | additive OP_MINUS multiplicative { $$ = Node::add<ast::OpSub>($1, $3); }
     | multiplicative
     ;
 
 multiplicative
-    : multiplicative OP_MULT negative { $$ = Node::add<ast::OpMult>($1, $3); }
-    | multiplicative OP_DIVF negative { $$ = Node::add<ast::OpDivF>($1, $3); }
+    : multiplicative OP_MULT negative  { $$ = Node::add<ast::OpMult>($1, $3); }
+    | multiplicative OP_DIVF negative  { $$ = Node::add<ast::OpDivF>($1, $3); }
     | negative
     ;
 
@@ -219,12 +242,13 @@ negative
     ;
 
 atom
-    : IDENTIFIER { 
+    : IDENTIFIER 
+    { 
         $$ = Node::add<ast::Identifier>(identifierStack.top());
         identifierStack.pop(); 
     }
-    | L_INTEGER { $$ = Node::add<ast::Integer>(curtoken); }
-    | L_STRING { $$ = Node::add<ast::String>(curtoken); }
+    | L_INTEGER                { $$ = Node::add<ast::Integer>(curtoken); }
+    | L_STRING                 { $$ = Node::add<ast::String>(curtoken); }
     | OP_LPAREN expr OP_RPAREN { $$ = $2; }
     ;
 
