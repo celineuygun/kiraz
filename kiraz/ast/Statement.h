@@ -402,10 +402,9 @@ private:
     Node::Ptr m_elseBranch;
 
 public:
-    // Constructor for IfStatement with optional else branch
     IfStatement(Node::Ptr condition, Node::Ptr thenBranch, Node::Ptr elseBranch = nullptr)
         : Statement(IDENTIFIER), m_condition(condition), m_thenBranch(thenBranch), m_elseBranch(elseBranch) {
-        assert(condition);  // Condition is required
+        assert(condition);
     }
 
     auto get_condition() const { return m_condition; }
@@ -421,6 +420,29 @@ public:
                            m_condition->as_string(), 
                            thenString, 
                            elseString);
+    }
+};
+
+class WhileStatement : public Statement {
+private:
+    Node::Ptr m_condition;
+    Node::Ptr m_repeatBranch;
+
+public:
+    WhileStatement(Node::Ptr condition, Node::Ptr repeatBranch = nullptr)
+        : Statement(KW_WHILE), m_condition(condition), m_repeatBranch(repeatBranch) {
+        assert(condition); 
+    }
+
+    auto get_condition() const { return m_condition; }
+    auto get_repeat_branch() const { return m_repeatBranch; }
+
+    std::string as_string() const override {
+        std::string repeatString = m_repeatBranch ? m_repeatBranch->as_string() : "";
+
+        return fmt::format("While(?={}, repeat=[{}])", 
+                           m_condition->as_string(), 
+                           repeatString);
     }
 };
 

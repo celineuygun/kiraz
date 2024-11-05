@@ -99,6 +99,7 @@ stmt
     | call_stmt
     | if_stmt
     | expr_stmt
+    | while_stmt
     | OP_LPAREN stmt OP_RPAREN { $$ = $2; }
     ;
 
@@ -243,6 +244,13 @@ if
     | KW_IF OP_LPAREN expr OP_RPAREN OP_LBRACE stmts OP_RBRACE KW_ELSE if
     {
         $$ = Node::add<ast::IfStatement>($3, $6, $9); 
+    }
+    ;
+
+while_stmt
+    : KW_WHILE OP_LPAREN expr OP_RPAREN OP_LBRACE stmts OP_RBRACE OP_SCOLON
+    {
+        $$ = Node::add<ast::WhileStatement>($3, $6);
     }
     ;
 
