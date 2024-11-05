@@ -42,7 +42,19 @@ struct ParserFixture : public testing::Test {
     }
 
     void verify_single(const std::string &code, const std::string &ast) {
-        return verify_root(code, fmt::format("Module([{}])", ast));
+        buffer = yy_scan_string(code.data());
+
+        /* perform */
+        yyparse();
+
+        /* verify */
+        ASSERT_TRUE(Node::current_root());
+        auto root = Node::current_root();
+        auto root_ast = root->as_string();
+        ASSERT_FALSE(root_ast.empty());
+        ASSERT_TRUE(root_ast.starts_with("Module(["));
+        ASSERT_TRUE(root_ast.ends_with("])"));
+        ASSERT_EQ(root_ast.substr(8, root_ast.size() - 10), ast);
     }
 
     void verify_no_root(const std::string &code) {
@@ -65,55 +77,55 @@ TEST_F(ParserFixture, invalid_char) {
 }
 
 TEST_F(ParserFixture, plus) {
-    verify_single("1+2;", "Add(l=Integer(1), r=Integer(2))");
+    verify_single("1+2;", "Add(l=Int(1), r=Int(2))");
 }
 
 TEST_F(ParserFixture, plus_s) {
-    verify_single("1+2;", "Add(l=Integer(1), r=Integer(2))");
+    verify_single("1+2;", "Add(l=Int(1), r=Int(2))");
 }
 
 TEST_F(ParserFixture, plus_sb) {
-    verify_single("1 +2;", "Add(l=Integer(1), r=Integer(2))");
+    verify_single("1 +2;", "Add(l=Int(1), r=Int(2))");
 }
 
 TEST_F(ParserFixture, plus_ss) {
-    verify_single("1 + 2;", "Add(l=Integer(1), r=Integer(2))");
+    verify_single("1 + 2;", "Add(l=Int(1), r=Int(2))");
 }
 
 TEST_F(ParserFixture, plus_sa) {
-    verify_single("1+ 2;", "Add(l=Integer(1), r=Integer(2))");
+    verify_single("1+ 2;", "Add(l=Int(1), r=Int(2))");
 }
 
 TEST_F(ParserFixture, plus_n) {
-    verify_single("1+\n2;", "Add(l=Integer(1), r=Integer(2))");
+    verify_single("1+\n2;", "Add(l=Int(1), r=Int(2))");
 }
 
 TEST_F(ParserFixture, plus_t) {
-    verify_single("1+\t2;", "Add(l=Integer(1), r=Integer(2))");
+    verify_single("1+\t2;", "Add(l=Int(1), r=Int(2))");
 }
 
 TEST_F(ParserFixture, minus) {
-    verify_single("1-2;", "Sub(l=Integer(1), r=Integer(2))");
+    verify_single("1-2;", "Sub(l=Int(1), r=Int(2))");
 }
 
 TEST_F(ParserFixture, mult) {
-    verify_single("1*2;", "Mult(l=Integer(1), r=Integer(2))");
+    verify_single("1*2;", "Mult(l=Int(1), r=Int(2))");
 }
 
 TEST_F(ParserFixture, divf) {
-    verify_single("1/2;", "DivF(l=Integer(1), r=Integer(2))");
+    verify_single("1/2;", "DivF(l=Int(1), r=Int(2))");
 }
 
 TEST_F(ParserFixture, muladd) {
-    verify_single("1+2*3;", "Add(l=Integer(1), r=Mult(l=Integer(2), r=Integer(3)))");
+    verify_single("1+2*3;", "Add(l=Int(1), r=Mult(l=Int(2), r=Int(3)))");
 }
 
 TEST_F(ParserFixture, muladd_paren) {
-    verify_single("1+(2*3);", "Add(l=Integer(1), r=Mult(l=Integer(2), r=Integer(3)))");
+    verify_single("1+(2*3);", "Add(l=Int(1), r=Mult(l=Int(2), r=Int(3)))");
 }
 
 TEST_F(ParserFixture, addmul_paren) {
-    verify_single("(1+2)*3;", "Mult(l=Add(l=Integer(1), r=Integer(2)), r=Integer(3))");
+    verify_single("(1+2)*3;", "Mult(l=Add(l=Int(1), r=Int(2)), r=Int(3))");
 }
 
 TEST_F(ParserFixture, string) {
@@ -125,82 +137,86 @@ TEST_F(ParserFixture, string_with_newline) {
 }
 
 TEST_F(ParserFixture, add_signed) {
-    verify_single("1 + -2;", "Add(l=Integer(1), r=Signed(OP_MINUS, Integer(2)))");
+    verify_single("1 + -2;", "Add(l=Int(1), r=Signed(OP_MINUS, Int(2)))");
 }
 
 TEST_F(ParserFixture, signed_add) {
-    verify_single("-1 + 2;", "Add(l=Signed(OP_MINUS, Integer(1)), r=Integer(2))");
+    verify_single("-1 + 2;", "Add(l=Signed(OP_MINUS, Int(1)), r=Int(2))");
+}
+
+TEST_F(ParserFixture, signed_sub_chain) {
+    verify_single("7 - 2 - 1;", "Sub(l=Sub(l=Int(7), r=Int(2)), r=Int(1))");
 }
 
 TEST_F(ParserFixture, add_mul) {
     verify_single("1 + 2 * 3;",
             "Add("
-            "l=Integer(1), "
-            "r=Mult(l=Integer(2), r=Integer(3))"
+            "l=Int(1), "
+            "r=Mult(l=Int(2), r=Int(3))"
             ")");
 }
 
 TEST_F(ParserFixture, mul_add) {
     verify_single("1 * 2 + 3;",
             "Add("
-            "l=Mult(l=Integer(1), r=Integer(2)), "
-            "r=Integer(3)"
+            "l=Mult(l=Int(1), r=Int(2)), "
+            "r=Int(3)"
             ")");
 }
 
 TEST_F(ParserFixture, add__paren_mul) {
     verify_single("1 + (2 * 3);",
             "Add("
-            "l=Integer(1), "
-            "r=Mult(l=Integer(2), r=Integer(3))"
+            "l=Int(1), "
+            "r=Mult(l=Int(2), r=Int(3))"
             ")");
 }
 
 TEST_F(ParserFixture, paren_mul__add) {
     verify_single("(1 * 2) + 3;",
             "Add("
-            "l=Mult(l=Integer(1), r=Integer(2)), "
-            "r=Integer(3)"
+            "l=Mult(l=Int(1), r=Int(2)), "
+            "r=Int(3)"
             ")");
 }
 
 TEST_F(ParserFixture, mul__paren_add) {
     verify_single("1 * (2 + 3);",
             "Mult("
-            "l=Integer(1), "
-            "r=Add(l=Integer(2), r=Integer(3))"
+            "l=Int(1), "
+            "r=Add(l=Int(2), r=Int(3))"
             ")");
 }
 
 TEST_F(ParserFixture, paren_add__mul) {
     verify_single("(1 + 2) * 3;",
             "Mult("
-            "l=Add(l=Integer(1), r=Integer(2)), "
-            "r=Integer(3)"
+            "l=Add(l=Int(1), r=Int(2)), "
+            "r=Int(3)"
             ")");
 }
 
 TEST_F(ParserFixture, neg_paren_add__mul) {
     verify_single("-(1 + 2) * 3;",
             "Mult("
-            "l=Signed(OP_MINUS, Add(l=Integer(1), r=Integer(2))), "
-            "r=Integer(3)"
+            "l=Signed(OP_MINUS, Add(l=Int(1), r=Int(2))), "
+            "r=Int(3)"
             ")");
 }
 
 TEST_F(ParserFixture, paren_add__mul__paren_add) {
     verify_single("(1 + 2) * (3 + 4);",
             "Mult("
-            "l=Add(l=Integer(1), r=Integer(2)), "
-            "r=Add(l=Integer(3), r=Integer(4))"
+            "l=Add(l=Int(1), r=Int(2)), "
+            "r=Add(l=Int(3), r=Int(4))"
             ")");
 }
 
 TEST_F(ParserFixture, paren_mul__sub__paren_mul) {
     verify_single("(1 * 2) - (3 * 4);",
             "Sub("
-            "l=Mult(l=Integer(1), r=Integer(2)), "
-            "r=Mult(l=Integer(3), r=Integer(4))"
+            "l=Mult(l=Int(1), r=Int(2)), "
+            "r=Mult(l=Int(3), r=Int(4))"
             ")");
 }
 
@@ -208,29 +224,48 @@ TEST_F(ParserFixture, paren_mul__sub__paren_mul__with_iden) {
     verify_single("(a * b) - (c * d);", "Sub(l=Mult(l=Id(a), r=Id(b)), r=Mult(l=Id(c), r=Id(d)))");
 }
 
+TEST_F(ParserFixture, eq) {
+    verify_single("a == b;", "OpEq(l=Id(a), r=Id(b))");
+}
+
+TEST_F(ParserFixture, gt) {
+    verify_single("a > b;", "OpGt(l=Id(a), r=Id(b))");
+}
+
+TEST_F(ParserFixture, ge) {
+    verify_single("a >= b;", "OpGe(l=Id(a), r=Id(b))");
+}
+
+TEST_F(ParserFixture, lt) {
+    verify_single("a < b; ", "OpLt(l=Id(a), r=Id(b))");
+}
+
+TEST_F(ParserFixture, le) {
+    verify_single("a <= b;", "OpLe(l=Id(a), r=Id(b))");
+}
+
 TEST_F(ParserFixture, assignment) {
-    verify_single("a = 5;", "Assign(l=Id(a), r=Integer(5))");
+    verify_single("a = 5;", "Assign(l=Id(a), r=Int(5))");
 }
 
 TEST_F(ParserFixture, assignment_iden) {
-    verify_single("a = b + 5;", "Assign(l=Id(a), r=Add(l=Id(b), r=Integer(5)))");
+    verify_single("a = b + 5;", "Assign(l=Id(a), r=Add(l=Id(b), r=Int(5)))");
 }
 
 TEST_F(ParserFixture, assignment_iden_neg_2) {
-    verify_single(
-            "a = -(b / 5);", "Assign(l=Id(a), r=Signed(OP_MINUS, DivF(l=Id(b), r=Integer(5))))");
+    verify_single("a = -(b / 5);", "Assign(l=Id(a), r=Signed(OP_MINUS, DivF(l=Id(b), r=Int(5))))");
 }
 
 TEST_F(ParserFixture, assignment_iden_neg_3) {
     verify_single("a = -(b / 5) + 3;",
             "Assign("
             "l=Id(a), "
-            "r=Add(l=Signed(OP_MINUS, DivF(l=Id(b), r=Integer(5))), r=Integer(3))"
+            "r=Add(l=Signed(OP_MINUS, DivF(l=Id(b), r=Int(5))), r=Int(3))"
             ")");
 }
 
 TEST_F(ParserFixture, let_with_val) {
-    verify_single("let a = 5;", "Let(n=Id(a), i=Integer(5))");
+    verify_single("let a = 5;", "Let(n=Id(a), i=Int(5))");
 }
 
 TEST_F(ParserFixture, let_with_type) {
@@ -238,7 +273,7 @@ TEST_F(ParserFixture, let_with_type) {
 }
 
 TEST_F(ParserFixture, let_with_type_val) {
-    verify_single("let a : Int64 = 5;", "Let(n=Id(a), t=Id(Int64), i=Integer(5))");
+    verify_single("let a : Int64 = 5;", "Let(n=Id(a), t=Id(Int64), i=Int(5))");
 }
 
 TEST_F(ParserFixture, let_invalid) {
@@ -246,11 +281,11 @@ TEST_F(ParserFixture, let_invalid) {
 }
 
 TEST_F(ParserFixture, let_with_stmt) {
-    verify_single("let a = 2 * 3;", "Let(n=Id(a), i=Mult(l=Integer(2), r=Integer(3)))");
+    verify_single("let a = 2 * 3;", "Let(n=Id(a), i=Mult(l=Int(2), r=Int(3)))");
 }
 
 TEST_F(ParserFixture, let_with_stmt_invalid) {
-    verify_single("let a = 2 * 3;", "Let(n=Id(a), i=Mult(l=Integer(2), r=Integer(3)))");
+    verify_single("let a = 2 * 3;", "Let(n=Id(a), i=Mult(l=Int(2), r=Int(3)))");
 }
 
 TEST_F(ParserFixture, func) {
@@ -268,7 +303,7 @@ TEST_F(ParserFixture, func_args_stmts) {
             "n=Id(f), "
             "a=FuncArgs([FArg(n=Id(a1), t=Id(T))]), "
             "r=Id(T), "
-            "s=[Let(n=Id(v), t=Id(T), i=Integer(5))]"
+            "s=[Let(n=Id(v), t=Id(A1), i=Int(5))]"
             ")");
 }
 
@@ -281,26 +316,24 @@ TEST_F(ParserFixture, class_method) {
     verify_single("class A { func f(b: I, c: I) : B { a = b + c; }; };",
             "Class("
                 "n=Id(A), "
-                "s=CStmtList("
-                    "["
-                        "Func("
-                            "n=Id(f), "
-                            "a=FuncArgs("
-                                "["
-                                    "FArg(n=Id(b), t=Id(I)), "
-                                    "FArg(n=Id(c), t=Id(I))"
-                                "]"
-                            "), "
-                            "r=Id(B), "
-                            "s=["
-                                "Assign("
-                                    "l=Id(a), "
-                                    "r=Add(l=Id(b), r=Id(c))"
-                                ")"
+                "s=["
+                    "Func("
+                        "n=Id(f), "
+                        "a=FuncArgs("
+                            "["
+                                "FArg(n=Id(b), t=Id(I)), "
+                                "FArg(n=Id(c), t=Id(I))"
                             "]"
-                        ")"
-                    "]"
-                ")"
+                        "), "
+                        "r=Id(B), "
+                        "s=["
+                            "Assign("
+                                "l=Id(a), "
+                                "r=Add(l=Id(b), r=Id(c))"
+                            ")"
+                        "]"
+                    ")"
+                "]"
             ")"
         );
     // clang-format on
@@ -308,14 +341,18 @@ TEST_F(ParserFixture, class_method) {
 
 TEST_F(ParserFixture, class_attr_and_method) {
     verify_single("class A { let a = 5; func f() : B { }; };",
-            "Class(n=Id(A), s=CStmtList(["
-            "Let(n=Id(a), i=Integer(5)), "
+            "Class(n=Id(A), s=[Let(n=Id(a), i=Int(5)), "
             "Func(n=Id(f), a=[], r=Id(B), s=[])"
-            "]))");
+            "])");
 }
 
 TEST_F(ParserFixture, import) {
     verify_single("import a;", "Import(Id(a))");
+}
+
+TEST_F(ParserFixture, call) {
+    verify_single("a.b.c(d,e);",
+            "Call(n=Dot(l=Dot(l=Id(a), r=Id(b)), r=Id(c)), a=FuncArgs([Id(d), Id(e)]))");
 }
 
 TEST_F(ParserFixture, module) {
@@ -368,6 +405,14 @@ TEST_F(ParserFixture, while_repeat_stuff) {
     verify_single("while (a) { s; };", "While(?=Id(a), repeat=[Id(s)])");
 }
 
+TEST_F(ParserFixture, while_literal) {
+    verify_single("while (a > b) {};", "While(?=OpGt(l=Id(a), r=Id(b)), repeat=[])");
+}
+
+TEST_F(ParserFixture, while_bad_operand) {
+    verify_no_root("while (let a : b) {};");
+}
+
 TEST_F(ParserFixture, class_bad_name) {
     verify_no_root("class a.b { };");
 }
@@ -380,6 +425,63 @@ TEST_F(ParserFixture, let_bad_name) {
     verify_no_root("let f.g = a;");
 }
 
+TEST_F(ParserFixture, let_bad_initializer) {
+    verify_no_root("let a = return b;");
+}
+
+TEST_F(ParserFixture, gt_bad_operand) {
+    verify_no_root("let a < return b;");
+}
+
+TEST_F(ParserFixture, assignment_bad_operand_import) {
+    verify_no_root("a = import b;");
+}
+
+TEST_F(ParserFixture, assignment_bad_operand_class) {
+    verify_no_root("a = class A {};");
+}
+
+TEST_F(ParserFixture, assignment_bad_operand_let) {
+    verify_no_root("a = let a : b;");
+}
+
+TEST_F(ParserFixture, assignment_bad_operand_if) {
+    verify_no_root("a = if (true) {};");
+}
+
+TEST_F(ParserFixture, assignment_bad_operand_func) {
+    verify_no_root("a = func a() {};");
+}
+
+TEST_F(ParserFixture, assignment_bad_operand_while) {
+    verify_no_root("a = while (true) {};");
+}
+
+TEST_F(ParserFixture, assignment_bad_operand_return) {
+    verify_no_root("func f() { a = return b; }");
+}
+
 TEST_F(ParserFixture, func_bad_arg_name) {
     verify_no_root("func f(foo.bar: A) : R { };");
+}
+
+TEST_F(ParserFixture, return_literal) {
+    verify_single("return 1;", "Return(Int(1))");
+}
+
+TEST_F(ParserFixture, return_func_call) {
+    verify_single("return a.b(c,d,e);",
+            "Return(Call(n=Dot(l=Id(a), r=Id(b)), a=FuncArgs([Id(c), Id(d), Id(e)])))");
+}
+
+TEST_F(ParserFixture, return_logic) {
+    verify_single("return a > b;", "Return(OpGt(l=Id(a), r=Id(b)))");
+}
+
+TEST_F(ParserFixture, return_bad_operand) {
+    verify_no_root("return let a: b;");
+}
+
+TEST_F(ParserFixture, bonus) {
+    verify_no_root("1---2;");
 }

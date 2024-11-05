@@ -1,7 +1,6 @@
 
 #include <cassert>
 #include <cstdio>
-#include <string_view>
 
 #include "lexer.hpp"
 #include "main.h"
