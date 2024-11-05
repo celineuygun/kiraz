@@ -193,6 +193,23 @@ public:
     }
 };
 
+class ReturnStatement : public Statement {
+private:
+    Node::Ptr m_expression;
+
+public:
+    ReturnStatement(Node::Ptr expression)
+        : Statement(KW_RETURN), m_expression(expression) {
+        assert(expression);
+    }
+
+    auto get_expression() const { return m_expression; }
+
+    std::string as_string() const override {
+        return fmt::format("Return({})", m_expression->as_string());
+    }
+};
+
 class Parameter : public Statement {
 private:
     Node::Ptr m_name;
@@ -333,7 +350,6 @@ public:
         : Statement(KW_LET), m_identifier(identifier), m_type(type), m_value(value) {
             assert(identifier);
             if (type) {
-                //auto typeNode = Node::add<ast::TypeNode>(type->as_string());
                 auto typeNode = std::static_pointer_cast<const ast::TypeNode>(type);
                 assert(typeNode && typeNode->is_valid_type());
             } else {
@@ -377,7 +393,6 @@ public:
             assert(left);
             assert(right);
             if (type) {
-                // auto typeNode = Node::add<ast::TypeNode>(type->as_string());
                 auto typeNode = std::static_pointer_cast<const ast::TypeNode>(type);
                 assert(typeNode && typeNode->is_valid_type());
             } else {
@@ -412,14 +427,31 @@ public:
     auto get_else_branch() const { return m_elseBranch; }
 
     std::string as_string() const override {
-        std::string thenString = m_thenBranch ? m_thenBranch->as_string() : "";
-        
-        std::string elseString = m_elseBranch ? m_elseBranch->as_string() : "";
+        std::string thenString;
+        if (m_thenBranch) {
+            thenString = fmt::format("[{}]", m_thenBranch->as_string());
+        } else {
+            thenString = "[]";
+        }
 
-        return fmt::format("If(?={}, then=[{}], else=[{}])", 
-                           m_condition->as_string(), 
-                           thenString, 
-                           elseString);
+        std::string elseString;
+        if (m_elseBranch) {
+            if (auto elseIfStatement = dynamic_cast<IfStatement*>(m_elseBranch.get())) {
+                elseString = fmt::format("If(?={}, then=[{}], else=[{}])",
+                                        elseIfStatement->get_condition()->as_string(),
+                                        elseIfStatement->get_then_branch() ? elseIfStatement->get_then_branch()->as_string() : "[]",
+                                        elseIfStatement->get_else_branch() ? elseIfStatement->get_else_branch()->as_string() : "[]");
+            } else {
+                elseString = fmt::format("[{}]", m_elseBranch->as_string());
+            }
+        } else {
+            elseString = "[]";
+        }
+
+        return fmt::format("If(?={}, then={}, else={})",
+                        m_condition->as_string(),
+                        thenString,
+                        elseString);
     }
 };
 

@@ -56,6 +56,7 @@ extern std::stack<std::string> identifierStack;
 
 %token    KW_IF
 %token    KW_ELSE
+%token    KW_RETURN
 %token    KW_FUNC
 %token    KW_WHILE
 %token    KW_CLASS
@@ -94,9 +95,9 @@ stmt
     : import_stmt
     | class_stmt
     | func_stmt
+    | return_stmt
     | let_stmt
     | assign_stmt
-    | call_stmt
     | if_stmt
     | expr_stmt
     | while_stmt
@@ -177,6 +178,13 @@ param
       }
     ;
 
+return_stmt
+    : KW_RETURN expr OP_SCOLON
+    {
+        $$ = Node::add<ast::ReturnStatement>($2);
+    }
+    ;
+
 let_stmt
     : KW_LET identifier OP_ASSIGN expr OP_SCOLON
       {
@@ -210,8 +218,8 @@ assign_stmt
     }
     ;
 
-call_stmt
-    : dot_expr OP_LPAREN param_list OP_RPAREN OP_SCOLON
+call_expr
+    : dot_expr OP_LPAREN param_list OP_RPAREN
     {
         $$ = Node::add<ast::CallStatement>($1, $3);
     }
@@ -260,6 +268,7 @@ expr_stmt
 
 expr
     : additive
+    | call_expr
     | expr OP_EQUALS additive { $$ = Node::add<ast::OpEquals>($1, $3); }
     | expr OP_GT additive     { $$ = Node::add<ast::OpGT>($1, $3); }
     | expr OP_GE additive     { $$ = Node::add<ast::OpGE>($1, $3); }
@@ -269,7 +278,10 @@ expr
 
 additive
     : additive OP_PLUS multiplicative  { $$ = Node::add<ast::OpAdd>($1, $3); }
-    | additive OP_MINUS multiplicative { $$ = Node::add<ast::OpSub>($1, $3); }
+    | additive OP_MINUS multiplicative 
+    { 
+        $$ = Node::add<ast::OpSub>($1, $3); 
+    }
     | multiplicative
     ;
 
@@ -280,7 +292,13 @@ multiplicative
     ;
 
 negative
-    : OP_MINUS negative { $$ = Node::add<ast::SignedNode>(OP_MINUS, $2); }
+    : OP_MINUS atom           { $$ = Node::add<ast::SignedNode>(OP_MINUS, $2); }
+    | OP_MINUS OP_MINUS atom  
+    {
+        yyerror("Invalid use of multiple negation operators"); 
+        Node::reset_root();
+        YYERROR;
+    }
     | atom
     ;
 
@@ -298,6 +316,7 @@ identifier
         identifierStack.pop();
         $$ = identifier;
     }
+    | dtype { $$ = $1; } // FIXME to use type names as identifier
     ;
 
 %%

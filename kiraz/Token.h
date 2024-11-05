@@ -45,6 +45,6 @@ namespace token {
 inline auto fmt(int v) {
     return static_cast<yytokentype>(v);
 }
-} // namespace token
+}
 
 #endif // KIRAZ_TOKEN_H

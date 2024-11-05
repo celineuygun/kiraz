@@ -26,6 +26,12 @@ public:
     std::string as_string() const override { return "KW_FUNC"; }
 };
 
+class KeywordReturn : public Keyword {
+public:
+    KeywordReturn() : Keyword(KW_RETURN) {}
+    std::string as_string() const override { return "KW_RETURN"; }
+};
+
 class KeywordIf : public Keyword {
 public:
     KeywordIf() : Keyword(KW_IF) {}
