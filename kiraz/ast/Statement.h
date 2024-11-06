@@ -4,7 +4,6 @@
 #include <cassert>
 #include <string>
 #include <kiraz/Node.h>
-#include <iostream>
 
 namespace ast {
 

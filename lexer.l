@@ -5,7 +5,6 @@
 %{
 // https://stackoverflow.com/questions/9611682/flexlexer-support-for-unicode/9617585#9617585
 #include "main.h"
-#include <iostream>
 #include <kiraz/token/Boolean.h>
 #include <kiraz/token/Identifier.h>
 #include <kiraz/token/Keyword.h>

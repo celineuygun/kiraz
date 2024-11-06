@@ -1,7 +1,6 @@
 %{
 #include "main.h"
 #include "lexer.hpp"
-#include <iostream>
 
 #include <kiraz/ast/Identifier.h>
 #include <kiraz/ast/Literal.h>
@@ -76,10 +75,7 @@ extern int yylineno;
 prog
     : stmts       
     {
-        if($1) 
-        {
-            $$ = Node::add<ast::Module>($1);
-        }
+        if($1) { $$ = Node::add<ast::Module>($1); }
     }
     ;
 
@@ -111,7 +107,7 @@ import_stmt
 
 type_decl
     : OP_COLON identifier { $$ = $2; }
-//    : OP_COLON dtype { $$ = $2; }
+/*  : OP_COLON dtype { $$ = $2; }   */
     ;
 
 /*
@@ -170,13 +166,13 @@ param_list
 
 param
     : identifier type_decl
-      {
-          $$ = Node::add<ast::Parameter>($1, $2); 
-      }
+    {
+        $$ = Node::add<ast::Parameter>($1, $2); 
+    }
     | identifier
-      {
-          $$ = Node::add<ast::Parameter>($1, nullptr); 
-      }
+    {
+        $$ = Node::add<ast::Parameter>($1, nullptr); 
+    }
     ;
 
 return_stmt
@@ -188,17 +184,17 @@ return_stmt
 
 let_stmt
     : KW_LET identifier OP_ASSIGN expr OP_SCOLON
-      {
-          $$ = Node::add<ast::LetStatement>($2, $4);
-      }
+    {
+        $$ = Node::add<ast::LetStatement>($2, $4);
+    }
     | KW_LET identifier type_decl OP_ASSIGN expr OP_SCOLON
-      {
-          $$ = Node::add<ast::LetStatement>($2, $3, $5);
-      }
+    {
+        $$ = Node::add<ast::LetStatement>($2, $3, $5);
+    }
     | KW_LET identifier type_decl OP_SCOLON
-      {
-          $$ = Node::add<ast::LetStatement>($2, $3, nullptr);
-      }
+    {
+        $$ = Node::add<ast::LetStatement>($2, $3, nullptr);
+    }
     ;
 
 assign_stmt

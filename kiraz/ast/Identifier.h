@@ -3,8 +3,6 @@
 
 #include <kiraz/Node.h>
 #include <string>
-#include <iostream>
-
 namespace ast {
 
 class Identifier : public Node {
