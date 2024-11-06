@@ -14,6 +14,8 @@ public:
     std::string as_string() const override {
         return fmt::format("Identifier({})", m_value);
     }
+
+    auto get_value() const { return m_value; }
     
     void print() {fmt::print("{}\n", as_string());}
 

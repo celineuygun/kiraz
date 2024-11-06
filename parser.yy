@@ -17,8 +17,6 @@
 int yyerror(const char *msg);
 extern std::shared_ptr<Token> curtoken;
 extern int yylineno;
-
-extern std::stack<std::string> identifierStack;
 %}
 
 %token    IDENTIFIER
@@ -313,12 +311,7 @@ atom
     ;
 
 identifier
-    : IDENTIFIER
-    {
-        auto identifier = Node::add<ast::Identifier>(identifierStack.top());
-        identifierStack.pop();
-        $$ = identifier;
-    }
+    : IDENTIFIER               { $$ = Node::add<ast::Identifier>(curtoken); }
     ;
 
 %%

@@ -6,13 +6,12 @@
 
 namespace ast {
 
-// FIXME try to use this constructor instead of the other
 Identifier::Identifier(const Token::Ptr &token) : Node(IDENTIFIER) {
-    std::cout << "Token : " << token->as_string() << std::endl;
     assert(token->get_id() == IDENTIFIER);
     auto token_id = std::static_pointer_cast<const token::Identifier>(token);
+    std::cout << "token_id: " << token_id << std::endl;
     if (token_id) {
-        m_name = token_id->as_string();
+        m_name = token_id->get_value();
     } else {
         m_name = "invalid";
     }

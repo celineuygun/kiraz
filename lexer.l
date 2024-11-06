@@ -15,8 +15,6 @@
 static auto &colno = Token::colno;
 using namespace token;
 extern std::shared_ptr<Token> curtoken;
-
-std::stack<std::string> identifierStack;
 %}
 
 
@@ -74,7 +72,7 @@ std::stack<std::string> identifierStack;
 "."                         { colno += yyleng; curtoken = Token::New<OpDot>(); return OP_DOT; }
 "!"                         { colno += yyleng; curtoken = Token::New<OpNot>(); return OP_NOT; }
 
-[a-zA-Z_][0-9a-zA-Z_]*      { colno += yyleng; identifierStack.push(yytext); curtoken = Token::New<Identifier>(yytext); return IDENTIFIER; }
+[a-zA-Z_][0-9a-zA-Z_]*      { colno += yyleng; curtoken = Token::New<Identifier>(yytext); return IDENTIFIER; }
 
 [ \n\t]+                    { colno += yyleng; }
 .                           { colno += yyleng; curtoken = Token::New<Rejected>(yytext); return YYUNDEF; }

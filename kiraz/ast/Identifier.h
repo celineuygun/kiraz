@@ -12,8 +12,6 @@ private:
     std::string m_name;
 
 public:
-    explicit Identifier(const std::string &name)
-        : Node(IDENTIFIER), m_name(name) {}
     explicit Identifier(const Token::Ptr &token);
 
     auto get_name() const { return m_name; }
