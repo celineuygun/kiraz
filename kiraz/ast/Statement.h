@@ -32,12 +32,8 @@ class TypeNode : public Statement {
 private:
     enum enum_type {
         none_type,
-        t_type,
-        i_type,
-        b_type,
-        a1_type,
+        identifier_type,
         int_type,
-        int64_type,
         uint_type,
         long_long_type,
         ulong_long_type,
@@ -53,7 +49,7 @@ private:
         cstring_type,
         string_type,
         pointer_type,
-        custom_type
+        custom_type,
     } m_enumType;
 
     std::string m_type;
@@ -61,17 +57,11 @@ private:
 public:
     TypeNode(const std::string &type) 
         : Statement(IDENTIFIER), m_type(type) {
-        
         initialize_enum_from_string(type);
     }
 
     void initialize_enum_from_string(const std::string &type) {
-        if (type == "T") m_enumType = t_type;
-        else if (type == "I") m_enumType = i_type;
-        else if (type == "B") m_enumType = b_type;
-        else if (type == "A1") m_enumType = a1_type;
-        else if (type == "int") m_enumType = int_type;
-        else if (type == "Int64") m_enumType = int64_type;
+        if (type == "int") m_enumType = int_type;
         else if (type == "uint") m_enumType = uint_type;
         else if (type == "long") m_enumType = long_long_type;
         else if (type == "ulong") m_enumType = ulong_long_type;
@@ -86,7 +76,8 @@ public:
         else if (type == "string") m_enumType = string_type;
         else if (type == "pointer") m_enumType = pointer_type;
         else if (type == "custom") m_enumType = custom_type;
-        else m_enumType = none_type;
+        // else m_enumType = none_type;
+        else m_enumType = identifier_type;
     }
 
     auto get_type() const { return m_type; }
@@ -351,7 +342,8 @@ public:
             assert(identifier);
             if (type) {
                 auto typeNode = std::static_pointer_cast<const ast::TypeNode>(type);
-                assert(typeNode && typeNode->is_valid_type());
+                // assert(typeNode && typeNode->is_valid_type());
+                assert(typeNode);
             } else {
                 m_type = nullptr;
             }
@@ -394,7 +386,8 @@ public:
             assert(right);
             if (type) {
                 auto typeNode = std::static_pointer_cast<const ast::TypeNode>(type);
-                assert(typeNode && typeNode->is_valid_type());
+                // assert(typeNode && typeNode->is_valid_type());
+                assert(typeNode);
             } else {
                 m_type = nullptr;
             }

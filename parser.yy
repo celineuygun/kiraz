@@ -51,7 +51,7 @@ extern std::stack<std::string> identifierStack;
 %token    L_TRUE
 %token    L_FALSE
 
-%token T I B A1 INT INT64 UINT LONG ULONG INT128 UINT128 BOOL CHAR FLOAT 
+%token INT UINT LONG ULONG INT128 UINT128 BOOL CHAR FLOAT 
 %token DOUBLE CSTRING STRING POINTER CUSTOM 
 
 %token    KW_IF
@@ -112,9 +112,11 @@ import_stmt
     ;
 
 type_decl
-    : OP_COLON dtype    { $$ = $2; }
+    : OP_COLON identifier { $$ = $2; }
+//    : OP_COLON dtype { $$ = $2; }
     ;
 
+/*
 dtype
     : T           { $$ = Node::add<ast::TypeNode>("T"); }
     | I           { $$ = Node::add<ast::TypeNode>("I"); }
@@ -136,6 +138,7 @@ dtype
     | POINTER     { $$ = Node::add<ast::TypeNode>("pointer"); }
     | CUSTOM      { $$ = Node::add<ast::TypeNode>("custom"); }
     ;
+*/
 
 class_stmt
     : KW_CLASS identifier OP_LBRACE class_body OP_RBRACE OP_SCOLON
@@ -316,7 +319,6 @@ identifier
         identifierStack.pop();
         $$ = identifier;
     }
-    | dtype { $$ = $1; } // FIXME to use type names as identifier
     ;
 
 %%
