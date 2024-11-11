@@ -20,3 +20,11 @@ include(GoogleTest)
 add_executable(test_parser kiraz/test/test_parser.cc)
 target_link_libraries(test_parser kiraz GTest::gtest_main ${FLEX_LIBRARIES})
 gtest_discover_tests(test_parser)
+
+# add_executable(test_parser_gicik kiraz/test/test_parser_gicik.cc)
+# target_link_libraries(test_parser_gicik kiraz GTest::gtest_main ${FLEX_LIBRARIES})
+# gtest_discover_tests(test_parser_gicik)
+
+add_executable(test_semantics kiraz/test/test_semantics.cc)
+target_link_libraries(test_semantics kiraz GTest::gtest_main ${FLEX_LIBRARIES})
+gtest_discover_tests(test_semantics)

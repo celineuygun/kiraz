@@ -62,6 +62,12 @@ else()
     set(ADDITIONAL_FLEX_FLAGS "")
 endif()
 
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/gen/include/kiraz)
+include_directories(
+    ${CMAKE_CURRENT_BINARY_DIR}/gen/include
+    ${CMAKE_CURRENT_BINARY_DIR}/gen/include/kiraz
+)
+
 flex_target(LEXER
     ${CMAKE_CURRENT_SOURCE_DIR}/lexer.l
     ${CMAKE_CURRENT_BINARY_DIR}/_lexer_gen.cpp
@@ -76,6 +82,14 @@ bison_target(PARSER
 )
 
 add_flex_bison_dependency(LEXER PARSER)
+
+include(EncodeString)
+amp_encode_string(
+    INPUT         "${CMAKE_CURRENT_LIST_DIR}/io.ki"
+    NAME          FILE_io_ki
+    HEADER_OUTPUT HEADER_IO_KI
+    SOURCE_OUTPUT SOURCE_IO_KI
+)
 
 include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -112,9 +126,11 @@ add_library(kiraz STATIC
     kiraz/token/Operator.h
     kiraz/token/Operator.cpp
 
+    kiraz/Compiler.h
+    kiraz/Compiler.cpp
+
     kiraz/Node.h
     kiraz/Node.cpp
-
     kiraz/ast/Identifier.h
     kiraz/ast/Identifier.cpp
     kiraz/ast/Literal.h
@@ -124,10 +140,14 @@ add_library(kiraz STATIC
     kiraz/ast/Statement.h
     kiraz/ast/Statement.cpp
 
-    main.h
     ${BISON_PARSER_OUTPUTS}
     ${FLEX_LEXER_OUTPUTS}
+
+    ${HEADER_IO_KI}
+    ${SOURCE_IO_KI}
+
     lexer.hpp
+    main.h
 )
 
 add_executable(kirazc main.cpp)
