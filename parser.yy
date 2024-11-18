@@ -48,9 +48,6 @@ extern int yylineno;
 %token    L_TRUE
 %token    L_FALSE
 
-%token INT UINT LONG ULONG INT128 UINT128 BOOL CHAR FLOAT 
-%token DOUBLE CSTRING STRING POINTER CUSTOM 
-
 %token    KW_IF
 %token    KW_ELSE
 %token    KW_RETURN
@@ -107,32 +104,7 @@ import_stmt
 
 type_decl
     : OP_COLON identifier { $$ = $2; }
-/*  : OP_COLON dtype { $$ = $2; }   */
     ;
-
-/*
-dtype
-    : T           { $$ = Node::add<ast::TypeNode>("T"); }
-    | I           { $$ = Node::add<ast::TypeNode>("I"); }
-    | B           { $$ = Node::add<ast::TypeNode>("B"); }
-    | A1          { $$ = Node::add<ast::TypeNode>("A1"); }
-    | INT         { $$ = Node::add<ast::TypeNode>("int"); }
-    | INT64       { $$ = Node::add<ast::TypeNode>("Int64"); }
-    | UINT        { $$ = Node::add<ast::TypeNode>("uint"); }
-    | LONG        { $$ = Node::add<ast::TypeNode>("long"); }
-    | ULONG       { $$ = Node::add<ast::TypeNode>("ulong"); }
-    | INT128      { $$ = Node::add<ast::TypeNode>("int128"); }
-    | UINT128     { $$ = Node::add<ast::TypeNode>("uint128"); }
-    | BOOL        { $$ = Node::add<ast::TypeNode>("bool"); }
-    | CHAR        { $$ = Node::add<ast::TypeNode>("char"); }
-    | FLOAT       { $$ = Node::add<ast::TypeNode>("float"); }
-    | DOUBLE      { $$ = Node::add<ast::TypeNode>("double"); }
-    | CSTRING     { $$ = Node::add<ast::TypeNode>("cstring"); }
-    | STRING      { $$ = Node::add<ast::TypeNode>("string"); }
-    | POINTER     { $$ = Node::add<ast::TypeNode>("pointer"); }
-    | CUSTOM      { $$ = Node::add<ast::TypeNode>("custom"); }
-    ;
-*/
 
 class_stmt
     : KW_CLASS identifier OP_LBRACE class_body OP_RBRACE OP_SCOLON

@@ -25,71 +25,6 @@ public:
 
 };
 
-
-// TODO change types
-class TypeNode : public Statement {
-private:
-    enum enum_type {
-        none_type,
-        identifier_type,
-        int_type,
-        uint_type,
-        long_long_type,
-        ulong_long_type,
-        int128_type,
-        uint128_type,
-        bool_type,
-        char_type,
-        last_integer_type = char_type,
-        float_type,
-        double_type,
-        long_double_type,
-        last_numeric_type = long_double_type,
-        cstring_type,
-        string_type,
-        pointer_type,
-        custom_type,
-    } m_enumType;
-
-    std::string m_type;
-
-public:
-    TypeNode(const std::string &type) 
-        : Statement(IDENTIFIER), m_type(type) {
-        initialize_enum_from_string(type);
-    }
-
-    void initialize_enum_from_string(const std::string &type) {
-        if (type == "int") m_enumType = int_type;
-        else if (type == "uint") m_enumType = uint_type;
-        else if (type == "long") m_enumType = long_long_type;
-        else if (type == "ulong") m_enumType = ulong_long_type;
-        else if (type == "int128") m_enumType = int128_type;
-        else if (type == "uint128") m_enumType = uint128_type;
-        else if (type == "bool") m_enumType = bool_type;
-        else if (type == "char") m_enumType = char_type;
-        else if (type == "float") m_enumType = float_type;
-        else if (type == "double") m_enumType = double_type;
-        else if (type == "long_double") m_enumType = long_double_type;
-        else if (type == "cstring") m_enumType = cstring_type;
-        else if (type == "string") m_enumType = string_type;
-        else if (type == "pointer") m_enumType = pointer_type;
-        else if (type == "custom") m_enumType = custom_type;
-        // else m_enumType = none_type;
-        else m_enumType = identifier_type;
-    }
-
-    auto get_type() const { return m_type; }
-
-    bool is_valid_type() const {
-        return m_enumType != none_type;
-    }
-
-    std::string as_string() const override {
-        return fmt::format("Id({})", m_type);
-    }
-};
-
 class ImportStatement : public Statement {
 private:
     Node::Ptr m_identifier;
@@ -339,13 +274,7 @@ public:
     LetStatement(const Node::Ptr &identifier, const Node::Ptr &type, const Node::Ptr &value)
         : Statement(KW_LET), m_identifier(identifier), m_type(type), m_value(value) {
             assert(identifier);
-            if (type) {
-                auto typeNode = std::static_pointer_cast<const ast::TypeNode>(type);
-                // assert(typeNode && typeNode->is_valid_type());
-                assert(typeNode);
-            } else {
-                m_type = nullptr;
-            }
+            assert(type);
         }
 
     auto get_identifier() const { return m_identifier; }
@@ -383,13 +312,7 @@ public:
         : Statement(OP_ASSIGN), m_left(left), m_type(type), m_right(right) {
             assert(left);
             assert(right);
-            if (type) {
-                auto typeNode = std::static_pointer_cast<const ast::TypeNode>(type);
-                // assert(typeNode && typeNode->is_valid_type());
-                assert(typeNode);
-            } else {
-                m_type = nullptr;
-            }
+            assert(type);
         }
 
     auto get_left() const { return m_left; }
