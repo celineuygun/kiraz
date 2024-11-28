@@ -5,6 +5,8 @@
 #include "lexer.hpp"
 #include "main.h"
 #include "parser.hpp"
+#include <iostream>
+#include "kiraz/Compiler.h"
 
 #include <kiraz/Node.h>
 
@@ -110,6 +112,19 @@ int main(int argc, char **argv) {
     if (mode != MODE_UNKNOWN) {
         return usage(argc, argv);
     }
+
+    // std::string example_code = R"(
+    //     3 + 2;
+    // )";
+
+    // Compiler compiler;
+
+    // if (int result = compiler.compile_string(example_code, std::cout); result != 0) {
+    //     std::cerr << "Compilation failed: " << compiler.get_error() << std::endl;
+    //     return result;
+    // }
+
+    // std::cout << "Compilation successful!" << std::endl;
 
     return 0;
 }

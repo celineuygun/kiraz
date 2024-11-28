@@ -4,6 +4,7 @@
 #include <cassert>
 #include <string>
 #include <kiraz/Node.h>
+#include <kiraz/Compiler.h>
 
 namespace ast {
 
@@ -15,9 +16,16 @@ protected:
 class Module : public Statement {
 private:
     Node::Ptr m_statements;
+    std::unique_ptr<SymbolTable> m_symtab;
 
 public:
     Module(Node::Ptr statements) : Statement(IDENTIFIER), m_statements(statements) {}
+
+    bool is_stmt_list() const override { return true; }
+
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
 
     std::string as_string() const override {
     return fmt::format("Module([{}])", m_statements ? m_statements->as_string() : "");
@@ -35,6 +43,12 @@ public:
         assert(identifier);
     }
 
+    bool is_stmt_list() const override { return true; }
+
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+
     auto get_identifier() const { return m_identifier; }
 
     std::string as_string() const override {
@@ -51,8 +65,14 @@ public:
     CallStatement(Node::Ptr callee, Node::Ptr arguments)
         : Statement(IDENTIFIER), m_callee(callee), m_arguments(arguments) {}
 
-    auto getCallee() const { return m_callee; }
-    auto getArguments() const { return m_arguments; }
+    bool is_func() const override { return true; }
+    
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+
+    auto get_callee() const { return m_callee; }
+    auto get_arguments() const { return m_arguments; }
 
     std::string as_string() const override {
         std::string params_string;
@@ -72,49 +92,33 @@ public:
 class ClassStatement : public Statement {
 private:
     Node::Ptr m_name;
-    Node::Ptr m_members; // Contains both methods and member variables
+    Node::Cptr m_parent;
+    Node::Ptr m_stmts; // Contains both methods and member variables
+    std::unique_ptr<SymbolTable> m_symtab;
 
 public:
-    ClassStatement(Node::Ptr name, Node::Ptr members)
-        : Statement(KW_CLASS), m_name(name), m_members(members) {}
+    ClassStatement(Node::Ptr name, Node::Ptr stmts, Node::Ptr parent = nullptr)
+        : Statement(KW_CLASS), m_name(name), m_stmts(stmts), m_parent(parent) {}
 
-    auto getName() const { return m_name; }
-    auto getMembers() const { return m_members; }
+    bool is_class() const override { return true; }
+    
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+
+    auto get_name() const { return m_name; }
+    auto get_parent() const { return m_parent; }
+    auto get_stmts() const { return m_stmts; }
 
     std::string as_string() const override {
-        return fmt::format("Class(n={}, s=[{}])", 
+        std::string parentString;
+        if (m_parent) {
+            parentString = fmt::format(", p={}", m_parent->as_string());
+        }
+        return fmt::format("Class(n={}, s=[{}]{})", 
                            m_name->as_string(), 
-                           m_members ? m_members->as_string() : "");
-    }
-};
-
-class ClassBody : public Statement {
-private:
-    Node::Ptr m_first;
-    Node::Ptr m_next;
-
-public:
-    ClassBody(Node::Ptr first = nullptr, Node::Ptr next = nullptr)
-        : Statement(IDENTIFIER), m_first(first), m_next(next) {}
-
-    void setFirst(Node::Ptr first) { m_first = first; }
-    void setNext(Node::Ptr next) { m_next = next; }
-
-    auto getFirst() const { return m_first; }
-    auto getNext() const { return m_next; }
-
-    std::string as_string() const override {
-        std::string result = "";
-
-        if (m_first) {
-            result += m_first->as_string();
-        }
-
-        if (m_next) {
-            result += ", " + m_next->as_string();
-        }
-
-        return result;
+                           m_stmts ? m_stmts->as_string() : "",
+                           parentString);
     }
 };
 
@@ -128,6 +132,12 @@ public:
         assert(expression);
     }
 
+    bool is_stmt_list() const override { return true; }
+    
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+    
     auto get_expression() const { return m_expression; }
 
     std::string as_string() const override {
@@ -149,6 +159,12 @@ public:
         assert(name);
     }
 
+    bool is_funcarg_list() const override { return true; }
+    
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+    
     auto get_type() const { return m_type; }
     auto get_name() const { return m_name; }
 
@@ -174,7 +190,13 @@ private:
 public:
     ParameterList(Node::Ptr first, Node::Ptr next)
         : Statement(IDENTIFIER), m_first(first), m_next(next) {}
-
+    
+    bool is_funcarg_list() const override { return true; }
+    
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+    
     auto get_first() const { return m_first; }
     auto get_next() const { return m_next; }
 
@@ -202,6 +224,12 @@ public:
     StatementList(Node::Ptr first, Node::Ptr next)
         : Statement(IDENTIFIER), m_first(first), m_next(next) {}
 
+    bool is_stmt_list() const override { return true; }
+    
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+    
     auto get_first() const { return m_first; } 
     auto get_next() const { return m_next; }
 
@@ -227,6 +255,7 @@ private:
     Node::Ptr m_returnType;
     Node::Ptr m_parameters;
     Node::Ptr m_body;
+    std::unique_ptr<SymbolTable> m_symtab;
 
 public:
     FunctionStatement(Node::Ptr name, Node::Ptr parameters, Node::Ptr returnType, Node::Ptr body)
@@ -236,10 +265,16 @@ public:
           m_parameters(parameters), 
           m_body(body) {}
 
-    auto getName() const { return m_name; }
-    auto getReturnType() const { return m_returnType; }
-    auto getParameters() const { return m_parameters; }
-    auto getBody() const { return m_body; }
+    bool is_func() const override { return true; }
+    
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+    
+    auto get_name() const { return m_name; }
+    auto get_return_type() const { return m_returnType; }
+    auto get_parameters() const { return m_parameters; }
+    auto get_body() const { return m_body; }
 
      std::string as_string() const override {
         std::string params_string;
@@ -271,6 +306,12 @@ public:
             assert(value);
         }
 
+    bool is_stmt_list() const override { return true; }
+    
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+    
     LetStatement(const Node::Ptr &identifier, const Node::Ptr &type, const Node::Ptr &value)
         : Statement(KW_LET), m_identifier(identifier), m_type(type), m_value(value) {
             assert(identifier);
@@ -315,6 +356,12 @@ public:
             assert(type);
         }
 
+    bool is_stmt_list() const override { return true; }
+    
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+    
     auto get_left() const { return m_left; }
     auto get_right() const { return m_right; }
 
@@ -337,6 +384,12 @@ public:
         assert(condition);
     }
 
+    bool is_stmt_list() const override { return true; }
+    
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+    
     auto get_condition() const { return m_condition; }
     auto get_then_branch() const { return m_thenBranch; }
     auto get_else_branch() const { return m_elseBranch; }
@@ -381,6 +434,12 @@ public:
         assert(condition); 
     }
 
+    bool is_stmt_list() const override { return true; }
+    
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+    
     auto get_condition() const { return m_condition; }
     auto get_repeat_branch() const { return m_repeatBranch; }
 

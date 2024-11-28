@@ -111,10 +111,14 @@ class_stmt
     {
         $$ = Node::add<ast::ClassStatement>($2, $4);
     }
+    | KW_CLASS identifier OP_COLON identifier OP_LBRACE class_body OP_RBRACE OP_SCOLON
+    {
+        $$ = Node::add<ast::ClassStatement>($2, $6, $4);
+    }
     ;
 
 class_body
-    : class_member class_body { $$ = Node::add<ast::ClassBody>($1, $2); }
+    : class_member class_body { $$ = Node::add<ast::StatementList>($1, $2); }
     | /* empty */             { $$ = nullptr; }
     ;
 
@@ -238,6 +242,7 @@ expr_stmt
 expr
     : additive
     | call_expr
+    | dot_expr
     | expr OP_EQUALS additive { $$ = Node::add<ast::OpEquals>($1, $3); }
     | expr OP_GT additive     { $$ = Node::add<ast::OpGT>($1, $3); }
     | expr OP_GE additive     { $$ = Node::add<ast::OpGE>($1, $3); }
