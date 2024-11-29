@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <string>
+#include <memory> 
 #include <kiraz/Node.h>
 #include <kiraz/Compiler.h>
 

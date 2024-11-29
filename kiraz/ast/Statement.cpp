@@ -6,12 +6,13 @@ namespace ast {
     // Module
     Node::Ptr Module::compute_stmt_type(SymbolTable &st) {
         std::cout << "Module::compute_stmt_type" << std::endl;
-
+        std::cout << "stmts: " << m_statements->as_string() << std::endl;
+        
         if(m_statements) {
             assert(m_statements->is_stmt_list());
-            auto scope = st.enter_scope(ScopeType::Module, shared_from_this());
+            set_cur_symtab(st.get_cur_symtab());
+            st.print();
 
-            // Process the StatementList
             auto current = std::dynamic_pointer_cast<StatementList>(m_statements);
             while (current) {
                 if (current->get_first()) {
@@ -26,6 +27,7 @@ namespace ast {
                     }
                 }
                 current = std::dynamic_pointer_cast<StatementList>(current->get_next());
+                st.print();
             }
         }
 
@@ -62,8 +64,8 @@ namespace ast {
 
     Node::Ptr ImportStatement::add_to_symtab_ordered(SymbolTable &st) {
         std::cout << "ImportStatement::add_to_symtab_ordered: " << m_identifier->as_string() << std::endl;
-        st.add_symbol(m_identifier->as_string(), m_identifier);
-        return m_identifier;
+        st.add_symbol(m_identifier->as_string(), shared_from_this());
+        return nullptr;
     }
 
     // CallStatement
@@ -95,6 +97,7 @@ namespace ast {
 
         if(m_stmts) {
             assert(m_stmts->is_stmt_list());
+            set_cur_symtab(st.get_cur_symtab());
             auto scope = st.enter_scope(ScopeType::Class, shared_from_this());
 
             auto current = std::dynamic_pointer_cast<StatementList>(m_stmts);
@@ -112,6 +115,7 @@ namespace ast {
                     }
                     current = std::dynamic_pointer_cast<StatementList>(current->get_next());
                 }
+            st.print();
         }
         return nullptr;
     }
@@ -119,13 +123,14 @@ namespace ast {
 
     Node::Ptr ClassStatement::add_to_symtab_forward(SymbolTable &st) {
         std::cout << "ClassStatement::add_to_symtab_forward: " << m_name->as_string() << std::endl;
-        st.add_symbol(m_name->as_string(), shared_from_this());
+        if(m_name) {
+            st.add_symbol(m_name->as_string(), shared_from_this());
+        }
         return nullptr;
     }
 
     Node::Ptr ClassStatement::add_to_symtab_ordered(SymbolTable &st) {
         std::cout << "ClassStatement::add_to_symtab_ordered" << std::endl;
-        auto scope = st.enter_scope(ScopeType::Class, shared_from_this());
         if (m_stmts) {
             m_stmts->add_to_symtab_ordered(st);
         }
@@ -151,17 +156,28 @@ namespace ast {
     // Parameter
     Node::Ptr Parameter::compute_stmt_type(SymbolTable &st) {
         std::cout << "Parameter::compute_stmt_type" << std::endl;
-        return m_type->compute_stmt_type(st);
+        if(m_type) {
+            return m_type->compute_stmt_type(st);
+        } return nullptr;
     }
 
     Node::Ptr Parameter::add_to_symtab_forward(SymbolTable &st) {
         std::cout << "Parameter::add_to_symtab_forward: " << m_name->as_string() << std::endl;
-        st.add_symbol(m_name->as_string(), m_name);
+        if(m_name) {
+            st.add_symbol(m_name->as_string(), shared_from_this());
+        }
         return nullptr;
     }
 
     Node::Ptr Parameter::add_to_symtab_ordered(SymbolTable &st) {
         std::cout << "Parameter::add_to_symtab_ordered" << std::endl;
+        if(m_name) {
+            m_name->add_to_symtab_ordered(st);
+
+        }
+        if(m_type) {
+            m_type->add_to_symtab_ordered(st);
+        }
         return nullptr;
     }
 
@@ -239,8 +255,6 @@ namespace ast {
     Node::Ptr FunctionStatement::compute_stmt_type(SymbolTable &st) {
         std::cout << "FunctionStatement::compute_stmt_type" << std::endl;
 
-        auto scope = st.enter_scope(ScopeType::Func, shared_from_this());
-        // TODO
         Node::Ptr error;
         if (m_returnType) {
             error = m_returnType->compute_stmt_type(st);
@@ -252,8 +266,26 @@ namespace ast {
             if (error) return error;
         }
         if (m_body) {
-            error = m_body->compute_stmt_type(st);
-            if (error) return error;
+            assert(m_body->is_stmt_list());
+            set_cur_symtab(st.get_cur_symtab());
+            auto scope = st.enter_scope(ScopeType::Func, shared_from_this());
+
+            auto current = std::dynamic_pointer_cast<StatementList>(m_body);
+            while (current) {
+                if (current->get_first()) {
+                    if (auto ret = current->get_first()->add_to_symtab_forward(st)) {
+                        return ret;
+                    }
+                    if (auto ret = current->get_first()->add_to_symtab_ordered(*m_symtab)) {
+                        return ret;
+                    }
+                    if (auto ret = current->get_first()->compute_stmt_type(st)) {
+                        return ret;
+                    }
+                }
+                current = std::dynamic_pointer_cast<StatementList>(current->get_next());
+            }
+            st.print();
         }
 
         return nullptr;
@@ -261,10 +293,9 @@ namespace ast {
 
 
     Node::Ptr FunctionStatement::add_to_symtab_forward(SymbolTable &st) {
-         std::cout << "FunctionStatement::add_to_symtab_forward: " << m_name->as_string() << std::endl;
-        st.add_symbol(m_name->as_string(), m_name);
-        if (m_parameters) {
-            m_parameters->add_to_symtab_forward(st);
+        std::cout << "FunctionStatement::add_to_symtab_forward: " << m_name->as_string() << std::endl;
+        if(m_name) {
+            st.add_symbol(m_name->as_string(), shared_from_this());
         }
         return nullptr;
     }
@@ -280,7 +311,7 @@ namespace ast {
         return nullptr;
     }
 
-        Node::Ptr LetStatement::compute_stmt_type(SymbolTable &st) {
+    Node::Ptr LetStatement::compute_stmt_type(SymbolTable &st) {
         if (m_value) {
             std::cout << "LetStatement::compute_stmt_type" << std::endl;
             return m_value->compute_stmt_type(st);
@@ -290,13 +321,19 @@ namespace ast {
 
     Node::Ptr LetStatement::add_to_symtab_forward(SymbolTable &st) {
         std::cout << "LetStatement::add_to_symtab_forward: " << m_identifier->as_string() << std::endl;
-        st.add_symbol(m_identifier->as_string(), m_identifier);
+        if(m_identifier)
+            st.add_symbol(m_identifier->as_string(), shared_from_this());
         return nullptr;
     }
 
     Node::Ptr LetStatement::add_to_symtab_ordered(SymbolTable &st) {
         std::cout << "LetStatement::add_to_symtab_ordered: " << m_identifier->as_string() << std::endl;
-        st.add_symbol(m_identifier->as_string(), m_identifier);
+        if(m_value) {
+            m_value->add_to_symtab_ordered(st);
+        }
+        if(m_type) {
+            m_type->add_to_symtab_ordered(st);
+        }
         return nullptr;
     }
 

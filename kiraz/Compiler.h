@@ -4,6 +4,7 @@
 
 #include "Node.h"
 #include "Token.h"
+#include <iostream>
 #include <lexer.hpp>
 
 enum class ScopeType {
@@ -57,6 +58,25 @@ public:
     explicit SymbolTable(ScopeType);
 
     virtual ~SymbolTable();
+
+    void print() const {
+        std::cout << "===== Symbol Table =====" << std::endl;
+        for (size_t i = 0; i < m_symbols.size(); ++i) {
+            const auto &scope = m_symbols[i];
+            std::cout << "Scope " << i << ": Type = " << static_cast<int>(scope->scope_type) << std::endl;
+            for (const auto &symbol : scope->symbols) {
+                std::cout << "  Symbol: " << symbol.first << " -> ";
+                if (symbol.second) {
+                    std::cout << symbol.second->as_string();
+                } else {
+                    std::cout << "null";
+                }
+                std::cout << std::endl;
+            }
+            std::cout << std::endl;
+        }
+        std::cout << "=========================" << std::endl;
+    }
 
     Node::Ptr add_symbol(const std::string &name, Node::Ptr m) {
         assert(! name.empty());

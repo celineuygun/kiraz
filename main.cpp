@@ -113,18 +113,18 @@ int main(int argc, char **argv) {
         return usage(argc, argv);
     }
 
-    // std::string example_code = R"(
-    //     3 + 2;
-    // )";
+    std::string example_code = R"(
+        class C { let c = 5; }; func F(i : A, j : A) : Void {let f = 5; return 5;}; let a = 3;
+    )";
 
-    // Compiler compiler;
+    Compiler compiler;
 
-    // if (int result = compiler.compile_string(example_code, std::cout); result != 0) {
-    //     std::cerr << "Compilation failed: " << compiler.get_error() << std::endl;
-    //     return result;
-    // }
+    if (int result = compiler.compile_string(example_code, std::cout); result != 0) {
+        std::cerr << "Compilation failed: " << compiler.get_error() << std::endl;
+        return result;
+    }
 
-    // std::cout << "Compilation successful!" << std::endl;
+    std::cout << "Compilation successful!" << std::endl;
 
     return 0;
 }
