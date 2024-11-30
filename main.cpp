@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
     }
 
     std::string example_code = R"(
-        class C { let c = 5; }; func F(i : A, j : A) : Void {let f = 5; return 5;}; let a = 3;
+        let String = 5;
     )";
 
     Compiler compiler;

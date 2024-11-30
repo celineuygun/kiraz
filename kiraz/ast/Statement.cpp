@@ -64,7 +64,14 @@ namespace ast {
 
     Node::Ptr ImportStatement::add_to_symtab_ordered(SymbolTable &st) {
         std::cout << "ImportStatement::add_to_symtab_ordered: " << m_identifier->as_string() << std::endl;
-        st.add_symbol(m_identifier->as_string(), shared_from_this());
+        if(m_identifier) {
+            auto id = std::dynamic_pointer_cast<Identifier>(m_identifier);
+            if (BuiltinManager::get_builtin_type(id->get_name())) {
+                std::cerr << "** Error: Identifier " << id->get_name() << " is a built-in type and cannot be used as an identifier!" << std::endl;
+                return nullptr;
+            }
+            st.add_symbol(m_identifier->as_string(), shared_from_this());
+        }
         return nullptr;
     }
 
@@ -124,6 +131,15 @@ namespace ast {
     Node::Ptr ClassStatement::add_to_symtab_forward(SymbolTable &st) {
         std::cout << "ClassStatement::add_to_symtab_forward: " << m_name->as_string() << std::endl;
         if(m_name) {
+            auto id = std::dynamic_pointer_cast<Identifier>(m_name);
+            if (BuiltinManager::get_builtin_type(id->get_name())) {
+                std::cerr << "** Error: Identifier " << id->get_name() << " is a built-in type and cannot be used as an identifier!" << std::endl;
+                return nullptr;
+            }
+            if(st.lookup(m_name->as_string())) {
+                std::cerr << "** Error: Symbol " << m_name->as_string() << " already exists in the current scope!" << std::endl;
+                return nullptr;
+            }
             st.add_symbol(m_name->as_string(), shared_from_this());
         }
         return nullptr;
@@ -164,6 +180,11 @@ namespace ast {
     Node::Ptr Parameter::add_to_symtab_forward(SymbolTable &st) {
         std::cout << "Parameter::add_to_symtab_forward: " << m_name->as_string() << std::endl;
         if(m_name) {
+            auto id = std::dynamic_pointer_cast<Identifier>(m_name);
+            if (BuiltinManager::get_builtin_type(id->get_name())) {
+                std::cerr << "** Error: Identifier " << id->get_name() << " is a built-in type and cannot be used as an identifier!" << std::endl;
+                return nullptr;
+            }
             st.add_symbol(m_name->as_string(), shared_from_this());
         }
         return nullptr;
@@ -172,6 +193,11 @@ namespace ast {
     Node::Ptr Parameter::add_to_symtab_ordered(SymbolTable &st) {
         std::cout << "Parameter::add_to_symtab_ordered" << std::endl;
         if(m_name) {
+            auto id = std::dynamic_pointer_cast<Identifier>(m_name);
+            if (BuiltinManager::get_builtin_type(id->get_name())) {
+                std::cerr << "** Error: Identifier " << id->get_name() << " is a built-in type and cannot be used as an identifier!" << std::endl;
+                return nullptr;
+            }
             m_name->add_to_symtab_ordered(st);
 
         }
@@ -295,6 +321,15 @@ namespace ast {
     Node::Ptr FunctionStatement::add_to_symtab_forward(SymbolTable &st) {
         std::cout << "FunctionStatement::add_to_symtab_forward: " << m_name->as_string() << std::endl;
         if(m_name) {
+            auto id = std::dynamic_pointer_cast<Identifier>(m_name);
+            if (BuiltinManager::get_builtin_type(id->get_name())) {
+                std::cerr << "** Error: Identifier " << id->get_name() << " is a built-in type and cannot be used as an identifier!" << std::endl;
+                return nullptr;
+            }
+            if(st.lookup(m_name->as_string())) {
+                std::cerr << "** Error: Symbol " << m_name->as_string() << " already exists in the current scope!" << std::endl;
+                return nullptr;
+            }
             st.add_symbol(m_name->as_string(), shared_from_this());
         }
         return nullptr;
@@ -321,8 +356,18 @@ namespace ast {
 
     Node::Ptr LetStatement::add_to_symtab_forward(SymbolTable &st) {
         std::cout << "LetStatement::add_to_symtab_forward: " << m_identifier->as_string() << std::endl;
-        if(m_identifier)
+        if(m_identifier) {
+            auto id = std::dynamic_pointer_cast<Identifier>(m_identifier);
+            if (BuiltinManager::get_builtin_type(id->get_name())) {
+                std::cerr << "** Error: Identifier " << id->get_name() << " is a built-in type and cannot be used as an identifier!" << std::endl;
+                return nullptr;
+            }
+            if(st.lookup(m_identifier->as_string())) {
+                std::cerr << "** Error: Symbol " << m_identifier->as_string() << " already exists in the current scope!" << std::endl;
+                return nullptr;
+            }
             st.add_symbol(m_identifier->as_string(), shared_from_this());
+        }
         return nullptr;
     }
 

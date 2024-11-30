@@ -4,8 +4,10 @@
 #include <cassert>
 #include <string>
 #include <memory> 
-#include <kiraz/Node.h>
-#include <kiraz/Compiler.h>
+#include "kiraz/Node.h"
+#include "kiraz/Compiler.h"
+#include "Identifier.h"
+#include "BuiltinTypes.h"
 
 namespace ast {
 
@@ -262,7 +264,7 @@ public:
     FunctionStatement(Node::Ptr name, Node::Ptr parameters, Node::Ptr returnType, Node::Ptr body)
         : Statement(KW_FUNC), 
           m_name(name), 
-          m_returnType(returnType),
+          m_returnType(returnType ? returnType : BuiltinManager::Void),
           m_parameters(parameters), 
           m_body(body) {}
 

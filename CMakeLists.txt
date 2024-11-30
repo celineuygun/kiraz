@@ -131,6 +131,8 @@ add_library(kiraz STATIC
 
     kiraz/Node.h
     kiraz/Node.cpp
+    kiraz/ast/BuiltinTypes.h
+    kiraz/ast/BuiltinTypes.cpp
     kiraz/ast/Identifier.h
     kiraz/ast/Identifier.cpp
     kiraz/ast/Literal.h

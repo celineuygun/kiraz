@@ -78,6 +78,17 @@ public:
         std::cout << "=========================" << std::endl;
     }
 
+    Node::Ptr lookup(const std::string& name) const {
+        for (auto it = m_symbols.rbegin(); it != m_symbols.rend(); ++it) {
+            const auto &scope = *it;
+            auto symbol = scope->find(name);
+            if (symbol != scope->end()) {
+                return symbol->second;
+            }
+        }
+        return nullptr;
+    }
+
     Node::Ptr add_symbol(const std::string &name, Node::Ptr m) {
         assert(! name.empty());
         (*m_symbols.back())[name] = m;

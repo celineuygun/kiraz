@@ -2,6 +2,7 @@
 #include "main.h"
 #include "lexer.hpp"
 
+#include <kiraz/ast/BuiltinTypes.h>
 #include <kiraz/ast/Identifier.h>
 #include <kiraz/ast/Literal.h>
 #include <kiraz/ast/Operator.h>
