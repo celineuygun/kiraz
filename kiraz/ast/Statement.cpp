@@ -1,11 +1,11 @@
 #include "Statement.h"
 #include <iostream>
+#include <memory>
 
 namespace ast {
 
     // Module
     Node::Ptr Module::compute_stmt_type(SymbolTable &st) {
-        std::cout << "Module::compute_stmt_type" << std::endl;
         std::cout << "stmts: " << m_statements->as_string() << std::endl;
         
         if(m_statements) {
@@ -36,7 +36,6 @@ namespace ast {
 
 
     Node::Ptr Module::add_to_symtab_forward(SymbolTable &st) {
-        std::cout << "Module::add_to_symtab_forward" << std::endl;
         if (m_statements) {
             return m_statements->add_to_symtab_forward(st);
         }
@@ -44,7 +43,6 @@ namespace ast {
     }
 
     Node::Ptr Module::add_to_symtab_ordered(SymbolTable &st) {
-        std::cout << "Module::add_to_symtab_ordered" << std::endl;
         if (m_statements) {
             return m_statements->add_to_symtab_ordered(st);
         }
@@ -53,31 +51,27 @@ namespace ast {
 
     // ImportStatement
     Node::Ptr ImportStatement::compute_stmt_type(SymbolTable &st) {
-        std::cout << "ImportStatement::compute_stmt_type" << std::endl;
         return nullptr;
     }
 
     Node::Ptr ImportStatement::add_to_symtab_forward(SymbolTable &st) {
-        std::cout << "ImportStatement::add_to_symtab_forward" << std::endl;
         return nullptr;
     }
 
     Node::Ptr ImportStatement::add_to_symtab_ordered(SymbolTable &st) {
-        std::cout << "ImportStatement::add_to_symtab_ordered: " << m_identifier->as_string() << std::endl;
         if(m_identifier) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_identifier);
             if (BuiltinManager::get_builtin_type(id->get_name())) {
                 std::cerr << "** Error: Identifier " << id->get_name() << " is a built-in type and cannot be used as an identifier!" << std::endl;
                 return nullptr;
             }
-            st.add_symbol(m_identifier->as_string(), shared_from_this());
+            st.add_symbol(id->get_name(), shared_from_this());
         }
         return nullptr;
     }
 
     // CallStatement
     Node::Ptr CallStatement::compute_stmt_type(SymbolTable &st) {
-        std::cout << "CallStatement::compute_stmt_type" << std::endl;
         Node::Ptr calleeError = m_callee->compute_stmt_type(st);
         if (calleeError) return calleeError;
         Node::Ptr argumentsError = m_arguments->compute_stmt_type(st);
@@ -86,13 +80,11 @@ namespace ast {
     }
 
     Node::Ptr CallStatement::add_to_symtab_forward(SymbolTable &st) {
-        std::cout << "CallStatement::add_to_symtab_forward" << std::endl;
         m_callee->add_to_symtab_forward(st);
         return nullptr;
     }
 
     Node::Ptr CallStatement::add_to_symtab_ordered(SymbolTable &st) {
-        std::cout << "CallStatement::add_to_symtab_ordered" << std::endl;
         m_callee->add_to_symtab_ordered(st);
         m_arguments->add_to_symtab_ordered(st);
         return nullptr;
@@ -100,8 +92,6 @@ namespace ast {
 
     // ClassStatement
     Node::Ptr ClassStatement::compute_stmt_type(SymbolTable &st) {
-        std::cout << "ClassStatement::compute_stmt_type" << std::endl;
-
         if(m_stmts) {
             assert(m_stmts->is_stmt_list());
             set_cur_symtab(st.get_cur_symtab());
@@ -129,24 +119,48 @@ namespace ast {
 
 
     Node::Ptr ClassStatement::add_to_symtab_forward(SymbolTable &st) {
-        std::cout << "ClassStatement::add_to_symtab_forward: " << m_name->as_string() << std::endl;
         if(m_name) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_name);
             if (BuiltinManager::get_builtin_type(id->get_name())) {
                 std::cerr << "** Error: Identifier " << id->get_name() << " is a built-in type and cannot be used as an identifier!" << std::endl;
                 return nullptr;
             }
-            if(st.lookup(m_name->as_string())) {
-                std::cerr << "** Error: Symbol " << m_name->as_string() << " already exists in the current scope!" << std::endl;
+            if(st.lookup(id->get_name())) {
+                throw std::runtime_error(fmt::format("Identifier '{}' is already in symtab", id->get_name()));
                 return nullptr;
             }
-            st.add_symbol(m_name->as_string(), shared_from_this());
+            st.add_symbol(id->get_name(), shared_from_this());
         }
+
+
+        m_symtab = std::make_unique<SymbolTable>(ScopeType::Class);
+
+        if (m_parent) {
+            // TODO
+            // auto parentSymbol = st.lookup(m_parent->as_string());
+            // if (!parentSymbol || !parentSymbol->is_class()) {
+            //     throw std::runtime_error(fmt::format("Parent class '{}' is not defined.", m_parent->as_string()));
+            // }
+            // auto parentClass = dynamic_cast<ClassStatement *>(parentSymbol.get());
+            // assert(parentClass);
+
+            // auto parentSymTab = parentClass->get_cur_symtab();
+            // if (parentSymTab) {
+            //     for (const auto &symbol : parentSymTab->symbols) {
+            //         if (m_symtab->lookup(symbol.first)) {
+            //             std::cerr << "** Warning: Member '" << symbol.first 
+            //                     << "' in class '" << m_name->as_string() 
+            //                     << "' overrides parent class member." << std::endl;
+            //         }
+            //         m_symtab->add_symbol(symbol.first, symbol.second);
+            //     }
+            // }
+        }
+        
         return nullptr;
     }
 
     Node::Ptr ClassStatement::add_to_symtab_ordered(SymbolTable &st) {
-        std::cout << "ClassStatement::add_to_symtab_ordered" << std::endl;
         if (m_stmts) {
             m_stmts->add_to_symtab_ordered(st);
         }
@@ -155,43 +169,43 @@ namespace ast {
 
     // ReturnStatement
     Node::Ptr ReturnStatement::compute_stmt_type(SymbolTable &st) {
-        std::cout << "ReturnStatement::compute_stmt_type" << std::endl;
         return m_expression->compute_stmt_type(st);
     }
 
     Node::Ptr ReturnStatement::add_to_symtab_forward(SymbolTable &st) {
-        std::cout << "ReturnStatement::add_to_symtab_forward" << std::endl;
         return nullptr;
     }
 
     Node::Ptr ReturnStatement::add_to_symtab_ordered(SymbolTable &st) {
-        std::cout << "ReturnStatement::add_to_symtab_ordered" << std::endl;
         return nullptr;
     }
 
     // Parameter
     Node::Ptr Parameter::compute_stmt_type(SymbolTable &st) {
-        std::cout << "Parameter::compute_stmt_type" << std::endl;
         if(m_type) {
+            auto id = std::dynamic_pointer_cast<Identifier>(m_type);
+            auto parent_name = std::dynamic_pointer_cast<Identifier>(m_parent->get_name());
+            if(!BuiltinManager::get_builtin_type(id->get_name()) && !st.lookup(id->get_name())) {
+                throw std::runtime_error(fmt::format("Identifier '{}' in function '{}' is not found", id->get_name(), parent_name->get_name()));
+                return nullptr;
+            }
             return m_type->compute_stmt_type(st);
         } return nullptr;
     }
 
     Node::Ptr Parameter::add_to_symtab_forward(SymbolTable &st) {
-        std::cout << "Parameter::add_to_symtab_forward: " << m_name->as_string() << std::endl;
         if(m_name) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_name);
             if (BuiltinManager::get_builtin_type(id->get_name())) {
                 std::cerr << "** Error: Identifier " << id->get_name() << " is a built-in type and cannot be used as an identifier!" << std::endl;
                 return nullptr;
             }
-            st.add_symbol(m_name->as_string(), shared_from_this());
+            st.add_symbol(id->get_name(), shared_from_this());
         }
         return nullptr;
     }
 
     Node::Ptr Parameter::add_to_symtab_ordered(SymbolTable &st) {
-        std::cout << "Parameter::add_to_symtab_ordered" << std::endl;
         if(m_name) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_name);
             if (BuiltinManager::get_builtin_type(id->get_name())) {
@@ -209,7 +223,6 @@ namespace ast {
 
     // ParameterList
     Node::Ptr ParameterList::compute_stmt_type(SymbolTable &st) {
-        std::cout << "ParameterList::compute_stmt_type" << std::endl;
         if (m_first) {
             Node::Ptr error = m_first->compute_stmt_type(st);
             if (error) return error;
@@ -221,7 +234,6 @@ namespace ast {
     }
 
     Node::Ptr ParameterList::add_to_symtab_forward(SymbolTable &st) {
-        std::cout << "ParameterList::add_to_symtab_forward" << std::endl;
         if (m_first) {
             m_first->add_to_symtab_forward(st);
         }
@@ -232,7 +244,6 @@ namespace ast {
     }
 
     Node::Ptr ParameterList::add_to_symtab_ordered(SymbolTable &st) {
-        std::cout << "ParameterList::add_to_symtab_ordered" << std::endl;
         if (m_first) {
             m_first->add_to_symtab_ordered(st);
         }
@@ -244,7 +255,6 @@ namespace ast {
 
     // StatementList
     Node::Ptr StatementList::compute_stmt_type(SymbolTable &st) {
-        std::cout << "StatementList::compute_stmt_type" << std::endl;
         if (m_first) {
             Node::Ptr error = m_first->compute_stmt_type(st);
             if (error) return error;
@@ -256,7 +266,6 @@ namespace ast {
     }
 
     Node::Ptr StatementList::add_to_symtab_forward(SymbolTable &st) {
-        std::cout << "StatementList::add_to_symtab_forward" << std::endl;
         if (m_first) {
             m_first->add_to_symtab_forward(st);
         }
@@ -267,7 +276,6 @@ namespace ast {
     }
 
     Node::Ptr StatementList::add_to_symtab_ordered(SymbolTable &st) {
-        std::cout << "StatementList::add_to_symtab_ordered" << std::endl;
         if (m_first) {
             m_first->add_to_symtab_ordered(st);
         }
@@ -279,7 +287,6 @@ namespace ast {
 
     // FunctionStatement
     Node::Ptr FunctionStatement::compute_stmt_type(SymbolTable &st) {
-        std::cout << "FunctionStatement::compute_stmt_type" << std::endl;
 
         Node::Ptr error;
         if (m_returnType) {
@@ -319,24 +326,22 @@ namespace ast {
 
 
     Node::Ptr FunctionStatement::add_to_symtab_forward(SymbolTable &st) {
-        std::cout << "FunctionStatement::add_to_symtab_forward: " << m_name->as_string() << std::endl;
         if(m_name) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_name);
             if (BuiltinManager::get_builtin_type(id->get_name())) {
                 std::cerr << "** Error: Identifier " << id->get_name() << " is a built-in type and cannot be used as an identifier!" << std::endl;
                 return nullptr;
             }
-            if(st.lookup(m_name->as_string())) {
-                std::cerr << "** Error: Symbol " << m_name->as_string() << " already exists in the current scope!" << std::endl;
+            if(st.lookup(id->get_name())) {
+                throw std::runtime_error(fmt::format("Identifier '{}' is already in symtab", id->get_name()));
                 return nullptr;
             }
-            st.add_symbol(m_name->as_string(), shared_from_this());
+            st.add_symbol(id->get_name(), shared_from_this());
         }
         return nullptr;
     }
 
     Node::Ptr FunctionStatement::add_to_symtab_ordered(SymbolTable &st) {
-        std::cout << "FunctionStatement::add_to_symtab_ordered: " << m_name->as_string() << std::endl;
         if (m_parameters) {
             m_parameters->add_to_symtab_ordered(st);
         }
@@ -348,31 +353,28 @@ namespace ast {
 
     Node::Ptr LetStatement::compute_stmt_type(SymbolTable &st) {
         if (m_value) {
-            std::cout << "LetStatement::compute_stmt_type" << std::endl;
             return m_value->compute_stmt_type(st);
         }
         return nullptr;
     }
 
     Node::Ptr LetStatement::add_to_symtab_forward(SymbolTable &st) {
-        std::cout << "LetStatement::add_to_symtab_forward: " << m_identifier->as_string() << std::endl;
         if(m_identifier) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_identifier);
             if (BuiltinManager::get_builtin_type(id->get_name())) {
                 std::cerr << "** Error: Identifier " << id->get_name() << " is a built-in type and cannot be used as an identifier!" << std::endl;
                 return nullptr;
             }
-            if(st.lookup(m_identifier->as_string())) {
-                std::cerr << "** Error: Symbol " << m_identifier->as_string() << " already exists in the current scope!" << std::endl;
+            if(st.lookup(id->get_name())) {
+                throw std::runtime_error(fmt::format("Identifier '{}' is already in symtab", id->get_name()));
                 return nullptr;
             }
-            st.add_symbol(m_identifier->as_string(), shared_from_this());
+            st.add_symbol(id->get_name(), shared_from_this());
         }
         return nullptr;
     }
 
     Node::Ptr LetStatement::add_to_symtab_ordered(SymbolTable &st) {
-        std::cout << "LetStatement::add_to_symtab_ordered: " << m_identifier->as_string() << std::endl;
         if(m_value) {
             m_value->add_to_symtab_ordered(st);
         }
@@ -400,7 +402,6 @@ namespace ast {
 
     Node::Ptr AssignmentStatement::add_to_symtab_forward(SymbolTable &st) {
         if (m_left) {
-            std::cout << "AssignmentStatement::add_to_symtab_forward (left)" << std::endl;
             return m_left->add_to_symtab_forward(st);
         }
         return nullptr;
@@ -408,11 +409,9 @@ namespace ast {
 
     Node::Ptr AssignmentStatement::add_to_symtab_ordered(SymbolTable &st) {
         if (m_left) {
-            std::cout << "AssignmentStatement::add_to_symtab_ordered (left)" << std::endl;
             m_left->add_to_symtab_ordered(st);
         }
         if (m_right) {
-            std::cout << "AssignmentStatement::add_to_symtab_ordered (right)" << std::endl;
             m_right->add_to_symtab_ordered(st);
         }
         return nullptr;
@@ -441,11 +440,9 @@ namespace ast {
 
     Node::Ptr IfStatement::add_to_symtab_ordered(SymbolTable &st) {
         if (m_thenBranch) {
-            std::cout << "IfStatement::add_to_symtab_ordered (thenBranch)" << std::endl;
             m_thenBranch->add_to_symtab_ordered(st);
         }
         if (m_elseBranch) {
-            std::cout << "IfStatement::add_to_symtab_ordered (elseBranch)" << std::endl;
             m_elseBranch->add_to_symtab_ordered(st);
         }
         return nullptr;
@@ -469,7 +466,6 @@ namespace ast {
 
     Node::Ptr WhileStatement::add_to_symtab_ordered(SymbolTable &st) {
         if (m_repeatBranch) {
-            std::cout << "WhileStatement::add_to_symtab_ordered (repeatBranch)" << std::endl;
             m_repeatBranch->add_to_symtab_ordered(st);
         }
         return nullptr;

@@ -11,6 +11,9 @@
 
 namespace ast {
 
+class Parameter;
+class ParameterList;
+
 class Statement : public Node {
 protected:
     explicit Statement(int type) : Node(type) {}
@@ -95,12 +98,12 @@ public:
 class ClassStatement : public Statement {
 private:
     Node::Ptr m_name;
-    Node::Cptr m_parent;
+    Node::Ptr m_parent;
     Node::Ptr m_stmts; // Contains both methods and member variables
     std::unique_ptr<SymbolTable> m_symtab;
 
 public:
-    ClassStatement(Node::Ptr name, Node::Ptr stmts, Node::Ptr parent = nullptr)
+    ClassStatement(Node::Ptr name, Node::Ptr stmts = nullptr, Node::Ptr parent = nullptr)
         : Statement(KW_CLASS), m_name(name), m_stmts(stmts), m_parent(parent) {}
 
     bool is_class() const override { return true; }
@@ -124,133 +127,6 @@ public:
                            parentString);
     }
 };
-
-class ReturnStatement : public Statement {
-private:
-    Node::Ptr m_expression;
-
-public:
-    ReturnStatement(Node::Ptr expression)
-        : Statement(KW_RETURN), m_expression(expression) {
-        assert(expression);
-    }
-
-    bool is_stmt_list() const override { return true; }
-    
-    Node::Ptr compute_stmt_type(SymbolTable &st) override;
-    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
-    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
-    
-    auto get_expression() const { return m_expression; }
-
-    std::string as_string() const override {
-        return fmt::format("Return({})", m_expression->as_string());
-    }
-};
-
-class Parameter : public Statement {
-private:
-    Node::Ptr m_name;
-    Node::Ptr m_type;
-
-public:
-    Parameter(const Node::Ptr &name, const Node::Ptr &type)
-        : Statement(IDENTIFIER), 
-          m_name(name), 
-          m_type(type) 
-    {
-        assert(name);
-    }
-
-    bool is_funcarg_list() const override { return true; }
-    
-    Node::Ptr compute_stmt_type(SymbolTable &st) override;
-    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
-    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
-    
-    auto get_type() const { return m_type; }
-    auto get_name() const { return m_name; }
-
-    std::string as_string() const override {
-        std::string result;
-        if (m_type) {
-            result = fmt::format("FArg(n={}, t={})", m_name->as_string(), m_type->as_string());
-        }
-    
-        else {
-            result = fmt::format("{}", m_name->as_string());
-        }
-
-        return result;
-    }
-};
-
-class ParameterList : public Statement {
-private:
-    Node::Ptr m_first;
-    Node::Ptr m_next;
-
-public:
-    ParameterList(Node::Ptr first, Node::Ptr next)
-        : Statement(IDENTIFIER), m_first(first), m_next(next) {}
-    
-    bool is_funcarg_list() const override { return true; }
-    
-    Node::Ptr compute_stmt_type(SymbolTable &st) override;
-    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
-    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
-    
-    auto get_first() const { return m_first; }
-    auto get_next() const { return m_next; }
-
-    std::string as_string() const override {
-        std::string result = "";
-        
-        if (m_first) {
-            result += m_first->as_string();
-        }
-        
-        if (m_next) {
-            result += ", " + m_next->as_string();
-        }
-        
-        return result;
-    }
-};
-
-class StatementList : public Statement {
-private:
-    Node::Ptr m_first;
-    Node::Ptr m_next;
-
-public:
-    StatementList(Node::Ptr first, Node::Ptr next)
-        : Statement(IDENTIFIER), m_first(first), m_next(next) {}
-
-    bool is_stmt_list() const override { return true; }
-    
-    Node::Ptr compute_stmt_type(SymbolTable &st) override;
-    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
-    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
-    
-    auto get_first() const { return m_first; } 
-    auto get_next() const { return m_next; }
-
-    std::string as_string() const override {
-        std::string result = "";
-
-        if (m_first) {
-            result += m_first->as_string();
-        }
-
-        if (m_next) {
-            result += ", " + m_next->as_string();
-        }
-
-        return result;
-    }
-};
-
 
 class FunctionStatement : public Statement {
 private:
@@ -293,6 +169,161 @@ public:
                            params_string,
                            m_returnType ? m_returnType->as_string() : "[]",
                            m_body ? m_body->as_string() : "");
+    }
+
+};
+
+class ReturnStatement : public Statement {
+private:
+    Node::Ptr m_expression;
+
+public:
+    ReturnStatement(Node::Ptr expression)
+        : Statement(KW_RETURN), m_expression(expression) {
+        assert(expression);
+    }
+
+    bool is_stmt_list() const override { return true; }
+    
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+    
+    auto get_expression() const { return m_expression; }
+
+    std::string as_string() const override {
+        return fmt::format("Return({})", m_expression->as_string());
+    }
+};
+
+class ParameterList : public Statement {
+private:
+    Node::Ptr m_first;
+    Node::Ptr m_next;
+    std::shared_ptr<FunctionStatement> m_parent;
+
+public:
+    ParameterList(Node::Ptr first, Node::Ptr next)
+        : Statement(IDENTIFIER), m_first(first), m_next(next) {}
+    
+    bool is_funcarg_list() const override { return true; }
+    
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+    
+    auto get_first() const { return m_first; }
+    auto get_next() const { return m_next; }
+    auto get_parent() const { return m_parent; }
+    void set_parent(std::shared_ptr<FunctionStatement> parent) { m_parent = parent; }
+
+    std::string as_string() const override {
+        std::string result = "";
+        
+        if (m_first) {
+            result += m_first->as_string();
+        }
+        
+        if (m_next) {
+            result += ", " + m_next->as_string();
+        }
+        
+        return result;
+    }
+
+    std::vector<std::shared_ptr<Parameter>> get_all_parameters() const {
+        std::vector<std::shared_ptr<Parameter>> params;
+        const ParameterList* current = this; 
+
+        while (current) {
+            auto param = std::dynamic_pointer_cast<Parameter>(current->get_first());
+            if (param) {
+                params.push_back(param); 
+            }
+
+            auto nextParamList = std::dynamic_pointer_cast<ParameterList>(current->get_next());
+            if (nextParamList) {
+                current = nextParamList.get(); 
+            } else {
+                break; 
+            }
+        }
+
+        return params;
+    }
+
+};
+
+class Parameter : public Statement {
+private:
+    Node::Ptr m_name;
+    Node::Ptr m_type;
+    std::shared_ptr<FunctionStatement> m_parent;
+
+public:
+    Parameter(const Node::Ptr &name, const Node::Ptr &type)
+        : Statement(IDENTIFIER), 
+          m_name(name), 
+          m_type(type)
+    {
+        assert(name);
+    }
+
+    bool is_funcarg_list() const override { return true; }
+    
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+    
+    auto get_type() const { return m_type; }
+    auto get_name() const { return m_name; }
+    auto get_parent() const { return m_parent; }
+    void set_parent(std::shared_ptr<FunctionStatement> parent) { m_parent = parent; }
+
+    std::string as_string() const override {
+        std::string result;
+        if (m_type) {
+            result = fmt::format("FArg(n={}, t={})", m_name->as_string(), m_type->as_string());
+        }
+    
+        else {
+            result = fmt::format("{}", m_name->as_string());
+        }
+
+        return result;
+    }
+};
+
+class StatementList : public Statement {
+private:
+    Node::Ptr m_first;
+    Node::Ptr m_next;
+
+public:
+    StatementList(Node::Ptr first, Node::Ptr next)
+        : Statement(IDENTIFIER), m_first(first), m_next(next) {}
+
+    bool is_stmt_list() const override { return true; }
+    
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+    
+    auto get_first() const { return m_first; } 
+    auto get_next() const { return m_next; }
+
+    std::string as_string() const override {
+        std::string result = "";
+
+        if (m_first) {
+            result += m_first->as_string();
+        }
+
+        if (m_next) {
+            result += ", " + m_next->as_string();
+        }
+
+        return result;
     }
 };
 

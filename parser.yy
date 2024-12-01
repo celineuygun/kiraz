@@ -1,4 +1,5 @@
 %{
+#include <stack>
 #include "main.h"
 #include "lexer.hpp"
 
@@ -17,6 +18,9 @@
 int yyerror(const char *msg);
 extern std::shared_ptr<Token> curtoken;
 extern int yylineno;
+
+std::shared_ptr<ast::ParameterList> parameters = nullptr;
+
 %}
 
 %token    IDENTIFIER
@@ -131,24 +135,46 @@ class_member
 func_stmt
     : KW_FUNC identifier OP_LPAREN param_list OP_RPAREN type_decl OP_LBRACE stmts OP_RBRACE OP_SCOLON
     {
-        $$ = Node::add<ast::FunctionStatement>($2, $4, $6, $8);
+        auto func = Node::add<ast::FunctionStatement>($2, $4, $6, $8);
+        if(func) {
+            if(parameters) {
+                parameters->set_parent(func);
+                std::vector<std::shared_ptr<ast::Parameter>> params = parameters->get_all_parameters();
+                for (const auto& param : params) {
+                    param->set_parent(func);
+                }
+            }
+        }
+        $$ = func;
     }
     ;
     
 param_list
     : /* empty */                   { $$ = nullptr; }
-    | param                         { $$ = Node::add<ast::ParameterList>($1, nullptr); }
-    | param_list OP_COMMA param     { $$ = Node::add<ast::ParameterList>($1, $3); }
+    | param
+    { 
+        auto params = Node::add<ast::ParameterList>($1, nullptr);
+        parameters = params;
+        $$ = params;
+    }
+    | param_list OP_COMMA param 
+    { 
+        auto params = Node::add<ast::ParameterList>($1, $3);
+        parameters = params;
+        $$ = params;
+    }
     ;
 
 param
     : identifier type_decl
     {
-        $$ = Node::add<ast::Parameter>($1, $2); 
+        auto param = Node::add<ast::Parameter>($1, $2);
+        $$ = param;
     }
     | identifier
     {
-        $$ = Node::add<ast::Parameter>($1, nullptr); 
+        auto param = Node::add<ast::Parameter>($1, nullptr); 
+        $$ = param;
     }
     ;
 
