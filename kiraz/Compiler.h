@@ -79,11 +79,17 @@ public:
     }
 
     Node::Ptr lookup(const std::string& name) const {
+        if (m_symbols.empty()) {
+            return nullptr;
+        }
+
         for (auto it = m_symbols.rbegin(); it != m_symbols.rend(); ++it) {
             const auto &scope = *it;
-            auto symbol = scope->find(name);
-            if (symbol != scope->end()) {
-                return symbol->second;
+            if(scope) {
+                auto symbol = scope->find(name);
+                if (symbol != scope->end()) {
+                    return symbol->second;
+                }
             }
         }
         return nullptr;

@@ -20,7 +20,7 @@ extern std::shared_ptr<Token> curtoken;
 extern int yylineno;
 
 std::shared_ptr<ast::ParameterList> parameters = nullptr;
-std::shared_ptr<ast::ParameterList> parameter = nullptr;
+std::vector<std::shared_ptr<ast::Parameter>> param_vector;
 
 %}
 
@@ -140,20 +140,10 @@ func_stmt
         if(func) {
             if(parameters) {
                 parameters->set_parent(func);
-                auto current = std::dynamic_pointer_cast<ast::ParameterList>(parameters);
-
-                while (current) {
-                    auto curr_param = current->get_first();
-                    auto parameter = std::dynamic_pointer_cast<ast::Parameter>(curr_param);
-
-                    if (parameter) {
-                        std::cout << "** inside if "<< std::endl;
-                        parameter->set_parent(func);
-                        
-                        std::cout << "param in parser: " << parameter->as_string() << std::endl;
-                    }
-                    current = std::dynamic_pointer_cast<ast::ParameterList>(current->get_next());
+                for (auto& param : param_vector) {
+                    param->set_parent(func);
                 }
+                param_vector.clear();
             }
         }
         $$ = func;
@@ -180,11 +170,13 @@ param
     : identifier type_decl
     {
         auto param = Node::add<ast::Parameter>($1, $2);
+        param_vector.push_back(param);
         $$ = param;
     }
-    | identifier
+    | atom
     {
-        auto param = Node::add<ast::Parameter>($1, nullptr); 
+        auto param = Node::add<ast::Parameter>($1, nullptr);
+        param_vector.push_back(param);
         $$ = param;
     }
     ;
