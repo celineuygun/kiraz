@@ -20,6 +20,7 @@ extern std::shared_ptr<Token> curtoken;
 extern int yylineno;
 
 std::shared_ptr<ast::ParameterList> parameters = nullptr;
+std::shared_ptr<ast::ParameterList> parameter = nullptr;
 
 %}
 
@@ -139,9 +140,19 @@ func_stmt
         if(func) {
             if(parameters) {
                 parameters->set_parent(func);
-                std::vector<std::shared_ptr<ast::Parameter>> params = parameters->get_all_parameters();
-                for (const auto& param : params) {
-                    param->set_parent(func);
+                auto current = std::dynamic_pointer_cast<ast::ParameterList>(parameters);
+
+                while (current) {
+                    auto curr_param = current->get_first();
+                    auto parameter = std::dynamic_pointer_cast<ast::Parameter>(curr_param);
+
+                    if (parameter) {
+                        std::cout << "** inside if "<< std::endl;
+                        parameter->set_parent(func);
+                        
+                        std::cout << "param in parser: " << parameter->as_string() << std::endl;
+                    }
+                    current = std::dynamic_pointer_cast<ast::ParameterList>(current->get_next());
                 }
             }
         }
@@ -220,6 +231,10 @@ assign_stmt
 
 call_expr
     : dot_expr OP_LPAREN param_list OP_RPAREN
+    {
+        $$ = Node::add<ast::CallStatement>($1, $3);
+    }
+    | identifier OP_LPAREN param_list OP_RPAREN
     {
         $$ = Node::add<ast::CallStatement>($1, $3);
     }

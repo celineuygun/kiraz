@@ -52,7 +52,6 @@ public:
     bool is_stmt_list() const override { return true; }
 
     Node::Ptr compute_stmt_type(SymbolTable &st) override;
-    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
     Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
 
     auto get_identifier() const { return m_identifier; }
@@ -186,72 +185,12 @@ public:
     bool is_stmt_list() const override { return true; }
     
     Node::Ptr compute_stmt_type(SymbolTable &st) override;
-    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
-    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
     
     auto get_expression() const { return m_expression; }
 
     std::string as_string() const override {
         return fmt::format("Return({})", m_expression->as_string());
     }
-};
-
-class ParameterList : public Statement {
-private:
-    Node::Ptr m_first;
-    Node::Ptr m_next;
-    std::shared_ptr<FunctionStatement> m_parent;
-
-public:
-    ParameterList(Node::Ptr first, Node::Ptr next)
-        : Statement(IDENTIFIER), m_first(first), m_next(next) {}
-    
-    bool is_funcarg_list() const override { return true; }
-    
-    Node::Ptr compute_stmt_type(SymbolTable &st) override;
-    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
-    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
-    
-    auto get_first() const { return m_first; }
-    auto get_next() const { return m_next; }
-    auto get_parent() const { return m_parent; }
-    void set_parent(std::shared_ptr<FunctionStatement> parent) { m_parent = parent; }
-
-    std::string as_string() const override {
-        std::string result = "";
-        
-        if (m_first) {
-            result += m_first->as_string();
-        }
-        
-        if (m_next) {
-            result += ", " + m_next->as_string();
-        }
-        
-        return result;
-    }
-
-    std::vector<std::shared_ptr<Parameter>> get_all_parameters() const {
-        std::vector<std::shared_ptr<Parameter>> params;
-        const ParameterList* current = this; 
-
-        while (current) {
-            auto param = std::dynamic_pointer_cast<Parameter>(current->get_first());
-            if (param) {
-                params.push_back(param); 
-            }
-
-            auto nextParamList = std::dynamic_pointer_cast<ParameterList>(current->get_next());
-            if (nextParamList) {
-                current = nextParamList.get(); 
-            } else {
-                break; 
-            }
-        }
-
-        return params;
-    }
-
 };
 
 class Parameter : public Statement {
@@ -272,13 +211,15 @@ public:
     bool is_funcarg_list() const override { return true; }
     
     Node::Ptr compute_stmt_type(SymbolTable &st) override;
-    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
     Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
     
     auto get_type() const { return m_type; }
     auto get_name() const { return m_name; }
     auto get_parent() const { return m_parent; }
-    void set_parent(std::shared_ptr<FunctionStatement> parent) { m_parent = parent; }
+    void set_parent(std::shared_ptr<FunctionStatement> parent) { m_parent = parent;
+    if(m_parent) {
+        std::cout << "init parent of " << m_name->as_string() << std::endl;
+    } }
 
     std::string as_string() const override {
         std::string result;
@@ -292,6 +233,43 @@ public:
 
         return result;
     }
+};
+
+class ParameterList : public Statement {
+private:
+    Node::Ptr m_first;
+    Node::Ptr m_next;
+    std::shared_ptr<FunctionStatement> m_parent;
+
+public:
+    ParameterList(Node::Ptr first, Node::Ptr next)
+        : Statement(IDENTIFIER), m_first(first), m_next(next) {}
+    
+    bool is_funcarg_list() const override { return true; }
+    
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+    
+    auto get_first() const { return m_first; }
+    auto get_next() const { return m_next; }
+    auto get_parent() const { return m_parent; }
+    void set_parent(std::shared_ptr<FunctionStatement> parent) { m_parent = parent; }
+
+
+    std::string as_string() const override {
+        std::string result = "";
+        
+        if (m_first) {
+            result += m_first->as_string();
+        }
+        
+        if (m_next) {
+            result += ", " + m_next->as_string();
+        }
+        
+        return result;
+    }
+
 };
 
 class StatementList : public Statement {

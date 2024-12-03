@@ -57,5 +57,6 @@ extern std::shared_ptr<Token> curtoken;
 
 [a-zA-Z_][0-9a-zA-Z_]*      { colno += yyleng; curtoken = Token::New<Identifier>(yytext); return IDENTIFIER; }
 
-[ \n\t]+                    { colno += yyleng; }
+[ \t]+                      { colno += yyleng; }
+[\\n]+                      { colno = 0; yylineno++; }
 .                           { colno += yyleng; curtoken = Token::New<Rejected>(yytext); return YYUNDEF; }

@@ -1,6 +1,7 @@
 
 #include <cassert>
 #include <cstdio>
+#include <fstream>
 
 #include "lexer.hpp"
 #include "main.h"
@@ -53,8 +54,26 @@ static int handle_mode_text(std::string_view arg) {
 }
 
 static int handle_mode_file(std::string_view arg) {
-    fmt::print("TODO\n");
-    return ERR;
+    std::ifstream file("../" + std::string(arg), std::ios::in);
+    if (!file.is_open()) {
+        std::cerr << "Error: Unable to open file " << arg << std::endl;
+        return ERR;
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    file.close();
+
+    std::string content = buffer.str();
+    Compiler compiler;
+    int result = compiler.compile_string(content, std::cout);
+
+    if (!compiler.get_error().empty()) {
+        std::cerr << compiler.get_error() << std::endl;
+        return ERR;
+    }
+
+    return result;
 }
 
 int main(int argc, char **argv) {
@@ -112,19 +131,6 @@ int main(int argc, char **argv) {
     if (mode != MODE_UNKNOWN) {
         return usage(argc, argv);
     }
-
-    std::string example_code = R"(
-        func f(a: A) : Void { };
-    )";
-
-    Compiler compiler;
-
-    if (int result = compiler.compile_string(example_code, std::cout); result != 0) {
-        std::cerr << "Compilation failed: " << compiler.get_error() << std::endl;
-        return result;
-    }
-
-    std::cout << "Compilation successful!" << std::endl;
 
     return 0;
 }
