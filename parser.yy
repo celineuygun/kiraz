@@ -48,6 +48,9 @@ std::vector<std::shared_ptr<ast::Parameter>> param_vector;
 %token    OP_SCOLON
 %token    OP_DOT
 %token    OP_NOT
+%token    OP_AND
+%token    OP_OR
+
 
 %token    L_INTEGER
 %token    L_STRING
@@ -276,6 +279,7 @@ expr_stmt
 
 expr
     : additive
+    | logical
     | call_expr
     | dot_expr
     | expr OP_EQUALS additive { $$ = Node::add<ast::OpEquals>($1, $3); }
@@ -283,6 +287,13 @@ expr
     | expr OP_GE additive     { $$ = Node::add<ast::OpGE>($1, $3); }
     | expr OP_LT additive     { $$ = Node::add<ast::OpLT>($1, $3); }
     | expr OP_LE additive     { $$ = Node::add<ast::OpLE>($1, $3); }
+    ;
+
+logical
+    : OP_AND OP_LPAREN expr OP_COMMA expr OP_RPAREN { $$ = Node::add<ast::OpAnd>($3, $5); }
+    | OP_OR OP_LPAREN expr OP_COMMA expr OP_RPAREN  { $$ = Node::add<ast::OpOr>($3, $5); }
+    | OP_NOT OP_LPAREN expr OP_RPAREN               { $$ = Node::add<ast::OpNot>($3); }
+    ;
     ;
 
 additive

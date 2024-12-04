@@ -30,6 +30,10 @@ extern std::shared_ptr<Token> curtoken;
 "true"                      { colno += yyleng; curtoken = Token::New<Boolean>(true); return L_TRUE; }
 "false"                     { colno += yyleng; curtoken = Token::New<Boolean>(false); return L_FALSE; }
 
+"and"                       { colno += yyleng; curtoken = Token::New<OpAnd>(); return OP_AND; }
+"or"                        { colno += yyleng; curtoken = Token::New<OpOr>(); return OP_OR; }
+"not"                       { colno += yyleng; curtoken = Token::New<OpNot>(); return OP_NOT; }
+
 [0-9]+                      { colno += yyleng; curtoken = Token::New<Integer>(10, yytext); return L_INTEGER; }
 
 \"[^\"]+\"                  { colno += yyleng; curtoken = Token::New<String>(yytext); return L_STRING; }
@@ -53,7 +57,6 @@ extern std::shared_ptr<Token> curtoken;
 ":"                         { colno += yyleng; curtoken = Token::New<OpColon>(); return OP_COLON; }
 ";"                         { colno += yyleng; curtoken = Token::New<OpScolon>(); return OP_SCOLON; }
 "."                         { colno += yyleng; curtoken = Token::New<OpDot>(); return OP_DOT; }
-"!"                         { colno += yyleng; curtoken = Token::New<OpNot>(); return OP_NOT; }
 
 [a-zA-Z_][0-9a-zA-Z_]*      { colno += yyleng; curtoken = Token::New<Identifier>(yytext); return IDENTIFIER; }
 

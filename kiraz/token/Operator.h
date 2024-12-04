@@ -157,6 +157,20 @@ public:
     std::string as_string() const override {return "OP_NOT";}
 };
 
+class OpAnd: public Operator {
+public:
+    OpAnd() : Operator(OP_AND) {}
+
+    std::string as_string() const override {return "OP_AND";}
+};
+
+class OpOr: public Operator {
+public:
+    OpOr() : Operator(OP_OR) {}
+
+    std::string as_string() const override {return "OP_OR";}
+};
+
 
 }
 

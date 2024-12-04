@@ -6,10 +6,36 @@
 #include <kiraz/Node.h>
 
 namespace ast {
-class OpBinary : public Node {
+
+class Operator : public Node {
+protected:
+    explicit Operator(int op) : Node(op) {}
+};
+
+class OpUnary : public Operator {
+protected:
+    Node::Ptr m_operand;
+
+public:
+    explicit OpUnary(int op, Node::Ptr &operand)
+        : Operator(op), m_operand(operand) {
+            assert(operand);
+        }
+
+    auto get_operand() const { return m_operand; }
+
+    std::string as_string() const override {
+        return fmt::format("{}({})", operator_name(), m_operand->as_string());
+    }
+
+protected:
+    virtual std::string operator_name() const = 0;
+};
+
+class OpBinary : public Operator {
 protected:
     explicit OpBinary(int op, const Node::Ptr &left, const Node::Ptr &right)
-        : Node(op), m_left(left), m_right(right) {
+        : Operator(op), m_left(left), m_right(right) {
             assert(left);
             assert(right);
         }
@@ -60,6 +86,14 @@ public:
         case OP_LE: 
             opstr = "OpLe"; 
             break;
+
+        case OP_AND: 
+            opstr = "OpAnd"; 
+            break;
+
+        case OP_OR: 
+            opstr = "OpOr"; 
+            break;
         
         default:
             break;
@@ -70,6 +104,14 @@ public:
 
 private:
     Node::Ptr m_left, m_right;
+};
+
+class OpNot : public OpUnary {
+public:
+    explicit OpNot(Node::Ptr &operand) : OpUnary(OP_NOT, operand) {}
+
+protected:
+    std::string operator_name() const override { return "Not"; }
 };
 
 class OpAdd : public OpBinary {
@@ -154,6 +196,46 @@ public:
 
     std::string as_string() const override {
         return fmt::format("Dot(l={}, r={})", m_left->as_string(), m_right->as_string());
+    }
+};
+
+class OpAnd : public Node {
+private:
+    Node::Ptr m_left;
+    Node::Ptr m_right;
+
+public:
+    OpAnd(Node::Ptr &left, Node::Ptr &right)
+        : Node(OP_AND), m_left(left), m_right(right) {
+            assert(left);
+            assert(right);
+        }
+
+    auto getLeft() const { return m_left; }
+    auto getRight() const { return m_right; }
+
+    std::string as_string() const override {
+        return fmt::format("And(l={}, r={})", m_left->as_string(), m_right->as_string());
+    }
+};
+
+class OpOr : public Node {
+private:
+    Node::Ptr m_left;
+    Node::Ptr m_right;
+
+public:
+    OpOr(Node::Ptr &left, Node::Ptr &right)
+        : Node(OP_OR), m_left(left), m_right(right) {
+            assert(left);
+            assert(right);
+        }
+
+    auto getLeft() const { return m_left; }
+    auto getRight() const { return m_right; }
+
+    std::string as_string() const override {
+        return fmt::format("Or(l={}, r={})", m_left->as_string(), m_right->as_string());
     }
 };
 
