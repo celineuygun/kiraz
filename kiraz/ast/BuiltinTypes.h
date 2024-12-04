@@ -2,6 +2,7 @@
 #define KIRAZ_AST_BUILTINS_H
 
 #include "kiraz/Node.h"
+#include "Operator.h"
 #include <unordered_map>
 #include <string>
 #include <memory>
@@ -39,6 +40,12 @@ public:
     static std::shared_ptr<BuiltinType> Integer64;
     static std::shared_ptr<BuiltinType> Void;
     static std::shared_ptr<BuiltinType> String;
+    static std::shared_ptr<BuiltinType> Function;
+
+    static Node::Ptr AndFunction(Node::Ptr left, Node::Ptr right);
+    static Node::Ptr OrFunction(Node::Ptr left, Node::Ptr right);
+    static Node::Ptr NotFunction(Node::Ptr operand);
+
 
     static Node::Ptr get_builtin_type(const std::string& name) {
         static const std::unordered_map<std::string, std::shared_ptr<BuiltinType>> builtins = {

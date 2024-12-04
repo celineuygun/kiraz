@@ -60,7 +60,7 @@ namespace ast {
     Node::Ptr ImportStatement::add_to_symtab_ordered(SymbolTable &st) {
         if(m_identifier) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_identifier);
-            if (BuiltinManager::get_builtin_type(id->get_name())) {
+            if (st.is_builtin(id->get_name())) {
                 return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
             }
             st.add_symbol(id->get_name(), shared_from_this());
@@ -131,11 +131,14 @@ namespace ast {
     Node::Ptr ClassStatement::add_to_symtab_forward(SymbolTable &st) {
         if(m_name) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_name);
-            if (BuiltinManager::get_builtin_type(id->get_name())) {
+            if (st.is_builtin(id->get_name())) {
                 return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
             }
             if(st.lookup(id->get_name())) {
                 return set_error(FF("Identifier '{}' is already in symtab", id->get_name()));
+            }
+            if(st.get_symbol(id->get_name()).first_letter_lowercase()) {
+                return set_error(FF("Class name '{}' can not start with an lowercase letter", id->get_name()));
             }
             st.add_symbol(id->get_name(), shared_from_this());
         }
@@ -187,7 +190,7 @@ namespace ast {
     Node::Ptr Parameter::add_to_symtab_forward(SymbolTable &st) {
         if(m_name) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_name);
-            if (BuiltinManager::get_builtin_type(id->get_name())) {
+            if (st.is_builtin(id->get_name())) {
                 return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
             }
             m_name->add_to_symtab_forward(st);
@@ -201,7 +204,7 @@ namespace ast {
             if(id) {
                 if(m_parent) {
                     auto parent_name = std::dynamic_pointer_cast<Identifier>(m_parent->get_name());
-                    if (BuiltinManager::get_builtin_type(id->get_name())) {
+                    if (st.is_builtin(id->get_name())) {
                         return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
                     }
                 }
@@ -326,7 +329,7 @@ namespace ast {
     Node::Ptr FunctionStatement::add_to_symtab_forward(SymbolTable &st) {
         if(m_name) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_name);
-            if (BuiltinManager::get_builtin_type(id->get_name())) {
+            if (st.is_builtin(id->get_name())) {
                 return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
             }
             if(st.lookup(id->get_name())) {
@@ -357,11 +360,14 @@ namespace ast {
     Node::Ptr LetStatement::add_to_symtab_forward(SymbolTable &st) {
         if(m_identifier) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_identifier);
-            if (BuiltinManager::get_builtin_type(id->get_name())) {
+            if (st.is_builtin(id->get_name())) {
                 return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
             }
             if(st.lookup(id->get_name())) {
                 return set_error(FF("Identifier '{}' is already in symtab", id->get_name()));
+            }
+            if(st.get_symbol(id->get_name()).first_letter_uppercase()) {
+                return set_error(FF("Variable name '{}' can not start with an uppercase letter", id->get_name()));
             }
             st.add_symbol(id->get_name(), shared_from_this());
         }
@@ -380,10 +386,11 @@ namespace ast {
 
     Node::Ptr AssignmentStatement::compute_stmt_type(SymbolTable &st) {
         if (m_left) {
-            Node::Ptr leftError = m_left->compute_stmt_type(st);
-            if (leftError) {
-                return leftError;
+            auto id = std::dynamic_pointer_cast<Identifier>(m_left);
+            if (st.is_builtin(id->get_name())) {
+                return set_error(fmt::format("Overriding builtin '{}' is not allowed", id->get_name()));
             }
+            return m_left->compute_stmt_type(st);
         }
         if (m_right) {
             Node::Ptr rightError = m_right->compute_stmt_type(st);

@@ -187,8 +187,6 @@ private:
 public:
     OpDot(Node::Ptr &left, Node::Ptr &right)
         : Node(OP_DOT), m_left(left), m_right(right) {
-            assert(left);
-            assert(right);
         }
 
     auto getLeft() const { return m_left; }
@@ -207,8 +205,6 @@ private:
 public:
     OpAnd(Node::Ptr &left, Node::Ptr &right)
         : Node(OP_AND), m_left(left), m_right(right) {
-            assert(left);
-            assert(right);
         }
 
     auto getLeft() const { return m_left; }
@@ -227,8 +223,6 @@ private:
 public:
     OpOr(Node::Ptr &left, Node::Ptr &right)
         : Node(OP_OR), m_left(left), m_right(right) {
-            assert(left);
-            assert(right);
         }
 
     auto getLeft() const { return m_left; }

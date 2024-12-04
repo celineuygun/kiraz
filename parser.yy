@@ -290,9 +290,9 @@ expr
     ;
 
 logical
-    : OP_AND OP_LPAREN expr OP_COMMA expr OP_RPAREN { $$ = Node::add<ast::OpAnd>($3, $5); }
-    | OP_OR OP_LPAREN expr OP_COMMA expr OP_RPAREN  { $$ = Node::add<ast::OpOr>($3, $5); }
-    | OP_NOT OP_LPAREN expr OP_RPAREN               { $$ = Node::add<ast::OpNot>($3); }
+    : OP_AND OP_LPAREN expr OP_COMMA expr OP_RPAREN { $$ = ast::BuiltinManager::AndFunction($3, $5); }
+    | OP_OR OP_LPAREN expr OP_COMMA expr OP_RPAREN  { $$ = ast::BuiltinManager::OrFunction($3, $5); }
+    | OP_NOT OP_LPAREN expr OP_RPAREN               { $$ = ast::BuiltinManager::NotFunction($3); }
     ;
     ;
 
