@@ -60,7 +60,9 @@ namespace ast {
     Node::Ptr ImportStatement::add_to_symtab_ordered(SymbolTable &st) {
         if(m_identifier) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_identifier);
-            Compiler::current()->set_error("** Error: Identifier " + id->get_name() + " is a built-in type and cannot be used as an identifier!");
+            if (BuiltinManager::get_builtin_type(id->get_name())) {
+                return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
+            }
             st.add_symbol(id->get_name(), shared_from_this());
         }
         return nullptr;
@@ -124,12 +126,10 @@ namespace ast {
         if(m_name) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_name);
             if (BuiltinManager::get_builtin_type(id->get_name())) {
-                Compiler::current()->set_error("** Error: Identifier " + id->get_name() + " is a built-in type and cannot be used as an identifier!");
-                return nullptr;
+                return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
             }
             if(st.lookup(id->get_name())) {
-                Compiler::current()->set_error("Identifier '" + id->get_name() + "' is already in symtab");
-                return nullptr;
+                return set_error(FF("Identifier '{}' is already in symtab", id->get_name()));
             }
             st.add_symbol(id->get_name(), shared_from_this());
         }
@@ -164,14 +164,12 @@ namespace ast {
             auto parent_name = std::dynamic_pointer_cast<Identifier>(m_parent->get_name());
             if (id && parent_name) {
                 if(st.lookup(id->get_name())) {
-                    Compiler::current()->set_error("Identifier '" + id->get_name() + "' in argument list of function '" + parent_name->get_name() + "' is already in symtab");
-                    return nullptr;
+                     return set_error(FF("Identifier '{}' in argument list of function '{}' is already in symtab", id->get_name(), parent_name->get_name()));
                 }
                 if(m_type) {
                     auto type = std::dynamic_pointer_cast<Identifier>(m_type);
                     if(!BuiltinManager::get_builtin_type(type->get_name())){
-                        Compiler::current()->set_error("Identifier '" + type->get_name() + "' in type of argument '" + id->get_name() + "' in function '" + parent_name->get_name() + "' is not found");
-                        return nullptr;
+                        return set_error(FF("Identifier '{}' in type of argument '{}' in function '{}' is not found", type->get_name(), id->get_name(), parent_name->get_name()));
                     }
                     return m_type->compute_stmt_type(st);
                 } 
@@ -184,8 +182,7 @@ namespace ast {
         if(m_name) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_name);
             if (BuiltinManager::get_builtin_type(id->get_name())) {
-                Compiler::current()->set_error("** Error: Identifier " + id->get_name() + " is a built-in type and cannot be used as an identifier!");
-                return nullptr;
+                return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
             }
             m_name->add_to_symtab_forward(st);
         }
@@ -199,8 +196,7 @@ namespace ast {
                 if(m_parent) {
                     auto parent_name = std::dynamic_pointer_cast<Identifier>(m_parent->get_name());
                     if (BuiltinManager::get_builtin_type(id->get_name())) {
-                        Compiler::current()->set_error("** Error: Identifier " + id->get_name() + " is a built-in type and cannot be used as an identifier!");
-                        return nullptr;
+                        return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
                     }
                 }
             }
@@ -286,8 +282,7 @@ namespace ast {
             auto type = std::dynamic_pointer_cast<Identifier>(m_returnType);
             auto name = std::dynamic_pointer_cast<Identifier>(m_name);
             if (!BuiltinManager::get_builtin_type(type->get_name())) {
-                Compiler::current()->set_error("Return type '" + type->get_name() + "' of function '" + name->get_name() + "' is not found");
-                return nullptr;
+                return set_error(FF("Return type '{}' of function '{}' is not found", type->get_name(), name->get_name()));
             }
             error = m_returnType->compute_stmt_type(st);
             if (error) return error;
@@ -326,12 +321,10 @@ namespace ast {
         if(m_name) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_name);
             if (BuiltinManager::get_builtin_type(id->get_name())) {
-                Compiler::current()->set_error("** Error: Identifier " + id->get_name() + " is a built-in type and cannot be used as an identifier!");
-                return nullptr;
+                return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
             }
             if(st.lookup(id->get_name())) {
-                Compiler::current()->set_error("Identifier '" + id->get_name() + "' is already in symtab");
-                return nullptr;
+                return set_error(FF("Identifier '{}' is already in symtab", id->get_name()));
             }
             st.add_symbol(id->get_name(), shared_from_this());
         }
@@ -359,12 +352,10 @@ namespace ast {
         if(m_identifier) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_identifier);
             if (BuiltinManager::get_builtin_type(id->get_name())) {
-                Compiler::current()->set_error("** Error: Identifier " + id->get_name() + " is a built-in type and cannot be used as an identifier!");
-                return nullptr;
+                return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
             }
             if(st.lookup(id->get_name())) {
-                Compiler::current()->set_error("Identifier '" + id->get_name() + "' is already in symtab");
-                return nullptr;
+                return set_error(FF("Identifier '{}' is already in symtab", id->get_name()));
             }
             st.add_symbol(id->get_name(), shared_from_this());
         }
