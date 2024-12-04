@@ -3,6 +3,7 @@
 #include "main.h"
 #include "lexer.hpp"
 
+#include <kiraz/ast/Boolean.h>
 #include <kiraz/ast/BuiltinTypes.h>
 #include <kiraz/ast/Identifier.h>
 #include <kiraz/ast/Literal.h>
@@ -314,6 +315,8 @@ atom
     : identifier               { $$ = $1; }
     | L_INTEGER                { $$ = Node::add<ast::Integer>(curtoken); }
     | L_STRING                 { $$ = Node::add<ast::String>(curtoken); }
+    | L_TRUE                   { $$ = Node::add<ast::Boolean>(L_TRUE); }
+    | L_FALSE                  { $$ = Node::add<ast::Boolean>(L_FALSE); }
     | OP_LPAREN expr OP_RPAREN { $$ = $2; }
     ;
 

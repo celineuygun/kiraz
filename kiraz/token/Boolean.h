@@ -16,7 +16,7 @@ public:
     //     return m_value ? "true" : "false";
     // }
     std::string as_string() const override { 
-        return fmt::format("{}({})", get_id(), get_value()); 
+        return fmt::format("{}", get_value()); 
     }
     void print() {fmt::print("{}\n", as_string());}
 

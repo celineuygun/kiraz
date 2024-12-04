@@ -70,13 +70,19 @@ namespace ast {
 
     // CallStatement
     Node::Ptr CallStatement::compute_stmt_type(SymbolTable &st) {
-        Node::Ptr calleeError = m_callee->compute_stmt_type(st);
-        if (calleeError) {
-            return calleeError;
+        if(m_callee) {
+            std::cout << "m_callee: " << m_callee->as_string() << std::endl;
+            return m_callee->compute_stmt_type(st);
         }
-        Node::Ptr argumentsError = m_arguments->compute_stmt_type(st);
-        if (argumentsError) {
-            return argumentsError;
+        if(m_arguments) {
+            auto id = std::dynamic_pointer_cast<Identifier>(m_arguments);
+            if(id) {
+                std::cout << "m_args: " << id->as_string() << std::endl;
+                if(!st.lookup(id->get_name())) {
+                    return set_error(FF("Identifier '{}' is not found", id->get_name()));
+                }
+            }
+            return m_arguments->compute_stmt_type(st);
         }
         return nullptr;
     }
@@ -163,7 +169,7 @@ namespace ast {
             auto id = std::dynamic_pointer_cast<Identifier>(m_name);
             auto parent_name = std::dynamic_pointer_cast<Identifier>(m_parent->get_name());
             if (id && parent_name) {
-                if(st.lookup(id->get_name())) {
+                if(st.lookup(id->get_name())) { // FIXME
                      return set_error(FF("Identifier '{}' in argument list of function '{}' is already in symtab", id->get_name(), parent_name->get_name()));
                 }
                 if(m_type) {
