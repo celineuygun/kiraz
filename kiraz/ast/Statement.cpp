@@ -155,6 +155,9 @@ namespace ast {
 
     // ReturnStatement
     Node::Ptr ReturnStatement::compute_stmt_type(SymbolTable &st) {
+        if(st.get_scope_type() != ScopeType::Func) {
+            return  set_error(FF("Misplaced return statement"));
+        }
         return m_expression->compute_stmt_type(st);
     }
 

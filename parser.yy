@@ -117,24 +117,14 @@ type_decl
     ;
 
 class_stmt
-    : KW_CLASS identifier OP_LBRACE class_body OP_RBRACE OP_SCOLON
+    : KW_CLASS identifier OP_LBRACE stmts OP_RBRACE OP_SCOLON
     {
         $$ = Node::add<ast::ClassStatement>($2, $4);
     }
-    | KW_CLASS identifier OP_COLON identifier OP_LBRACE class_body OP_RBRACE OP_SCOLON
+    | KW_CLASS identifier OP_COLON identifier OP_LBRACE stmts OP_RBRACE OP_SCOLON
     {
         $$ = Node::add<ast::ClassStatement>($2, $6, $4);
     }
-    ;
-
-class_body
-    : class_member class_body { $$ = Node::add<ast::StatementList>($1, $2); }
-    | /* empty */             { $$ = nullptr; }
-    ;
-
-class_member
-    : let_stmt
-    | func_stmt
     ;
 
 func_stmt
