@@ -2,13 +2,14 @@
 #define KIRAZ_AST_BOOLEAN_H
 
 #include <kiraz/Node.h>
+#include "BuiltinTypes.h"
 #include <string>
 namespace ast {
 
 class Boolean : public Node {
 public:
     Boolean(bool value) 
-        : m_value(value) {}
+        : m_value(value) {set_stmt_type(BuiltinManager::Boolean);}
     virtual ~Boolean() = default;
 
     auto get_value() const { return m_value; }

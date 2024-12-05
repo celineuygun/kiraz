@@ -2,6 +2,7 @@
 #define KIRAZ_AST_LITERAL_H
 
 #include <kiraz/Node.h>
+#include "BuiltinTypes.h"
 
 namespace ast {
 class Integer : public Node {

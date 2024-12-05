@@ -7,7 +7,7 @@ namespace ast {
 
 class Identifier : public Node {
 private:
-    std::string m_name;
+    std::string  m_name;
 
 public:
     explicit Identifier(const Token::Ptr &token);

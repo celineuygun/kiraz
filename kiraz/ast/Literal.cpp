@@ -15,12 +15,14 @@ Integer::Integer(Token::Ptr t) : Node(L_INTEGER) {
     catch (std::out_of_range &e) {
         m_value = 0;
     }
+    set_stmt_type(BuiltinManager::Integer64);
 }
 
 String::String(Token::Ptr t) : Node(L_STRING) {
     assert(t->get_id() == L_STRING);
     auto token_str = std::static_pointer_cast<const token::String>(t);
     m_value = token_str->get_value();
+    set_stmt_type(BuiltinManager::String);
 }
 
 }

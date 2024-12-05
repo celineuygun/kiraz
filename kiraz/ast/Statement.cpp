@@ -71,13 +71,11 @@ namespace ast {
     // CallStatement
     Node::Ptr CallStatement::compute_stmt_type(SymbolTable &st) {
         if(m_callee) {
-            std::cout << "m_callee: " << m_callee->as_string() << std::endl;
             return m_callee->compute_stmt_type(st);
         }
         if(m_arguments) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_arguments);
             if(id) {
-                std::cout << "m_args: " << id->as_string() << std::endl;
                 if(!st.lookup(id->get_name())) {
                     return set_error(FF("Identifier '{}' is not found", id->get_name()));
                 }
@@ -103,10 +101,10 @@ namespace ast {
 
     // ClassStatement
     Node::Ptr ClassStatement::compute_stmt_type(SymbolTable &st) {
+        set_cur_symtab(st.get_cur_symtab());
+        auto scope = st.enter_scope(ScopeType::Class, shared_from_this());
         if(m_stmts) {
             assert(m_stmts->is_stmt_list());
-            set_cur_symtab(st.get_cur_symtab());
-            auto scope = st.enter_scope(ScopeType::Class, shared_from_this());
 
             auto current = std::dynamic_pointer_cast<StatementList>(m_stmts);
             while (current) {
@@ -143,6 +141,15 @@ namespace ast {
             st.add_symbol(id->get_name(), shared_from_this());
         }
 
+        if(m_parent) {
+            auto id = std::dynamic_pointer_cast<Identifier>(m_parent);
+            if(id) {
+                if(!st.lookup(id->get_name())) {
+                    return set_error(FF("Type '{}' is not found", id->get_name()));
+                } 
+            }
+        }
+
         return nullptr;
     }
 
@@ -175,7 +182,7 @@ namespace ast {
             auto id = std::dynamic_pointer_cast<Identifier>(m_name);
             auto parent_name = std::dynamic_pointer_cast<Identifier>(m_parent->get_name());
             if (id && parent_name) {
-                if(st.lookup(id->get_name())) { // FIXME
+                if(st.lookup(id->get_name())) {
                      return set_error(FF("Identifier '{}' in argument list of function '{}' is already in symtab", id->get_name(), parent_name->get_name()));
                 }
                 if(m_type) {
@@ -193,8 +200,14 @@ namespace ast {
     Node::Ptr Parameter::add_to_symtab_forward(SymbolTable &st) {
         if(m_name) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_name);
-            if (st.is_builtin(id->get_name())) {
-                return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
+            if(id) {
+                if (st.is_builtin(id->get_name())) {
+                    return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
+                }
+                // if(st.lookup(id->get_name())) {
+                //     std::cout << "!!!" << std::endl;
+                //     return set_error(FF("Identifier '{}' is already in symtab", id->get_name()));
+                // }
             }
             m_name->add_to_symtab_forward(st);
         }
@@ -211,6 +224,10 @@ namespace ast {
                         return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
                     }
                 }
+                // if(st.lookup(id->get_name())) {
+                //         std::cout << "!!!" << std::endl;
+                //     return set_error(FF("Identifier '{}' is already in symtab", id->get_name()));
+                // }
             }
             m_name->add_to_symtab_ordered(st);
         }
@@ -233,23 +250,25 @@ namespace ast {
     }
 
     Node::Ptr ParameterList::add_to_symtab_forward(SymbolTable &st) {
+        Node::Ptr error = nullptr;
         if (m_first) {
-            m_first->add_to_symtab_forward(st);
+            error = m_first->add_to_symtab_forward(st);
         }
         if (m_next) {
-            m_next->add_to_symtab_forward(st);
+            error = m_next->add_to_symtab_forward(st);
         }
-        return nullptr;
+        return error;
     }
 
     Node::Ptr ParameterList::add_to_symtab_ordered(SymbolTable &st) {
+        Node::Ptr error = nullptr;
         if (m_first) {
-            m_first->add_to_symtab_ordered(st);
+            error = m_first->add_to_symtab_forward(st);
         }
         if (m_next) {
-            m_next->add_to_symtab_ordered(st);
+            error = m_next->add_to_symtab_forward(st);
         }
-        return nullptr;
+        return error;
     }
 
     // StatementList
@@ -310,6 +329,12 @@ namespace ast {
             auto current = std::dynamic_pointer_cast<StatementList>(m_body);
             while (current) {
                 if (current->get_first()) {
+                    auto id = std::dynamic_pointer_cast<Identifier>(current->get_first());
+                    if(id) {
+                        if(!st.lookup(id->get_name())) {
+                            return set_error(FF("Identifier '{}' is not found", id->get_name()));
+                        }
+                    }
                     if (auto ret = current->get_first()->add_to_symtab_forward(st)) {
                         return ret;
                     }
@@ -345,7 +370,10 @@ namespace ast {
 
     Node::Ptr FunctionStatement::add_to_symtab_ordered(SymbolTable &st) {
         if (m_parameters) {
-            m_parameters->add_to_symtab_ordered(st);
+            auto error = m_parameters->add_to_symtab_ordered(st);
+            if (error) {
+                return error; 
+            }
         }
         if (m_body) {
             m_body->add_to_symtab_ordered(st);
@@ -465,6 +493,11 @@ namespace ast {
     }
 
     Node::Ptr WhileStatement::add_to_symtab_forward(SymbolTable &st) {
+        std::cout << m_condition->as_string() << std::endl;
+         auto conditionType = m_condition->get_stmt_type();
+        if (conditionType != BuiltinManager::Boolean) {
+                return set_error(FF("While only accepts tests of type 'Boolean'"));
+            }
         return nullptr;
     }
 
