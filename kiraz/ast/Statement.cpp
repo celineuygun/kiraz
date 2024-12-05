@@ -450,6 +450,10 @@ namespace ast {
     }
 
     Node::Ptr IfStatement::compute_stmt_type(SymbolTable &st) {
+        if(st.get_scope_type() != ScopeType::Func) {
+            return  set_error(FF("Misplaced if statement"));
+        }
+
         Node::Ptr error = m_condition->compute_stmt_type(st);
         if (error) return error;
 
@@ -467,6 +471,12 @@ namespace ast {
     }
 
     Node::Ptr IfStatement::add_to_symtab_forward(SymbolTable &st) {
+        if(m_condition) {
+            auto conditionType = m_condition->get_stmt_type();
+            if (conditionType != BuiltinManager::Boolean) {
+                    return set_error(FF("If only accepts tests of type 'Boolean'"));
+            }
+        }
         return nullptr;
     }
 
@@ -481,6 +491,10 @@ namespace ast {
     }
 
     Node::Ptr WhileStatement::compute_stmt_type(SymbolTable &st) {
+        if(st.get_scope_type() != ScopeType::Func) {
+            return  set_error(FF("Misplaced while statement"));
+        }
+
         Node::Ptr error = m_condition->compute_stmt_type(st);
         if (error) return error;
 
@@ -493,11 +507,12 @@ namespace ast {
     }
 
     Node::Ptr WhileStatement::add_to_symtab_forward(SymbolTable &st) {
-        std::cout << m_condition->as_string() << std::endl;
-         auto conditionType = m_condition->get_stmt_type();
-        if (conditionType != BuiltinManager::Boolean) {
-                return set_error(FF("While only accepts tests of type 'Boolean'"));
+        if(m_condition) {
+            auto conditionType = m_condition->get_stmt_type();
+            if (conditionType != BuiltinManager::Boolean) {
+                    return set_error(FF("While only accepts tests of type 'Boolean'"));
             }
+        }
         return nullptr;
     }
 

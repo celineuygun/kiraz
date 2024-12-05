@@ -6,6 +6,7 @@
 #include <kiraz/Node.h>
 
 namespace ast {
+class BuiltinManager;
 
 class Operator : public Node {
 protected:
@@ -108,7 +109,7 @@ private:
 
 class OpNot : public OpUnary {
 public:
-    explicit OpNot(Node::Ptr &operand) : OpUnary(OP_NOT, operand) {}
+    explicit OpNot(Node::Ptr &operand);
 
 protected:
     std::string operator_name() const override { return "Not"; }
@@ -141,22 +142,22 @@ public:
 
 class OpGT : public OpBinary {
 public:
-    OpGT(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_GT, left, right) {}
+    OpGT(const Node::Ptr &left, const Node::Ptr &right);
 };
 
 class OpLT : public OpBinary {
 public:
-    OpLT(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_LT, left, right) {}
+    OpLT(const Node::Ptr &left, const Node::Ptr &right);
 };
 
 class OpGE : public OpBinary {
 public:
-    OpGE(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_GE, left, right) {}
+    OpGE(const Node::Ptr &left, const Node::Ptr &right);
 };
 
 class OpLE : public OpBinary {
 public:
-    OpLE(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_LE, left, right) {}
+    OpLE(const Node::Ptr &left, const Node::Ptr &right);
 };
 
 class OpAssign : public Node {
@@ -203,9 +204,7 @@ private:
     Node::Ptr m_right;
 
 public:
-    OpAnd(Node::Ptr &left, Node::Ptr &right)
-        : Node(OP_AND), m_left(left), m_right(right) {
-        }
+    OpAnd(Node::Ptr &left, Node::Ptr &right);
 
     auto getLeft() const { return m_left; }
     auto getRight() const { return m_right; }
@@ -221,9 +220,7 @@ private:
     Node::Ptr m_right;
 
 public:
-    OpOr(Node::Ptr &left, Node::Ptr &right)
-        : Node(OP_OR), m_left(left), m_right(right) {
-        }
+    OpOr(Node::Ptr &left, Node::Ptr &right);
 
     auto getLeft() const { return m_left; }
     auto getRight() const { return m_right; }

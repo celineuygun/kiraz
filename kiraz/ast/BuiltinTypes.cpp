@@ -2,12 +2,37 @@
 
 namespace ast {
 
-std::shared_ptr<BuiltinType> BuiltinManager::Boolean = std::make_shared<BuiltinType>("Boolean");
-std::shared_ptr<BuiltinType> BuiltinManager::Integer64 = std::make_shared<BuiltinType>("Integer64");
-std::shared_ptr<BuiltinType> BuiltinManager::Void = std::make_shared<BuiltinType>("Void");
-std::shared_ptr<BuiltinType> BuiltinManager::String = std::make_shared<BuiltinType>("String");
-std::shared_ptr<BuiltinType> BuiltinManager::Function = std::make_shared<BuiltinType>("Function");
+std::shared_ptr<BuiltinType> BuiltinManager::Boolean = []() {
+    auto type = std::make_shared<BuiltinType>("Boolean");
+    type->set_stmt_type(type);
+    return type;
+}();
 
+std::shared_ptr<BuiltinType> BuiltinManager::Integer64 = []() {
+    auto type = std::make_shared<BuiltinType>("Integer64");
+    type->set_stmt_type(type);
+    return type;
+}();
+
+std::shared_ptr<BuiltinType> BuiltinManager::Void = []() {
+    auto type = std::make_shared<BuiltinType>("Void");
+    type->set_stmt_type(type);
+    return type;
+}();
+
+std::shared_ptr<BuiltinType> BuiltinManager::String = []() {
+    auto type = std::make_shared<BuiltinType>("String");
+    type->set_stmt_type(type);
+    return type;
+}();
+
+std::shared_ptr<BuiltinType> BuiltinManager::Function = []() {
+    auto type = std::make_shared<BuiltinType>("Function");
+    type->set_stmt_type(type);
+    return type;
+}();
+
+// Implementations for logical functions
 Node::Ptr BuiltinManager::AndFunction(Node::Ptr left, Node::Ptr right) {
     return std::make_shared<OpAnd>(left, right);
 }
