@@ -56,31 +56,6 @@ struct CompilerFixture : public ::testing::Test {
         ASSERT_TRUE(Node::get_root_before());
     }
 
-    /**
-     * @brief verify_first: Verifies the AST of the first statement in the given
-     * module.
-     * @param code: Kiraz source code, as a string.
-     * @param ast:  Expected AST for the given code.
-     */
-    void verify_first(const std::string &code, const std::string &ast) {
-        Compiler compiler;
-
-        std::stringstream ostr;
-
-        /* perform */
-        compiler.compile_string(code);
-
-        /* verify */
-        if (! Node::get_root_before()) {
-            fmt::print("{}\n", compiler.get_error());
-        }
-
-        ASSERT_TRUE(Node::get_root_before());
-        ASSERT_TRUE(Node::get_first_before());
-        auto first = Node::get_first_before();
-        ASSERT_EQ(FF("{}", *first), ast);
-    }
-
     void verify_error(const std::string &code) {
         Compiler compiler;
 
