@@ -66,7 +66,7 @@ static int handle_mode_file(std::string_view arg) {
 
     std::string content = buffer.str();
     Compiler compiler;
-    int result = compiler.compile_string(content, std::cout);
+    int result = compiler.compile_string(content);
 
     if (!compiler.get_error().empty()) {
         std::cerr << compiler.get_error() << std::endl;

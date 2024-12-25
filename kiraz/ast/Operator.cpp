@@ -10,7 +10,7 @@ OpLT::OpLT(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_LT, left
 OpGE::OpGE(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_GE, left, right) { set_stmt_type(BuiltinManager::Boolean); }
 OpLE::OpLE(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_LE, left, right) { set_stmt_type(BuiltinManager::Boolean); }
 
-OpAnd::OpAnd(Node::Ptr &left, Node::Ptr &right): Node(OP_AND), m_left(left), m_right(right) { set_stmt_type(BuiltinManager::Boolean); }
-OpOr::OpOr(Node::Ptr &left, Node::Ptr &right): Node(OP_OR), m_left(left), m_right(right) { set_stmt_type(BuiltinManager::Boolean); }
+OpAnd::OpAnd(Node::Ptr &left, Node::Ptr &right): m_left(left), m_right(right) { set_stmt_type(BuiltinManager::Boolean); }
+OpOr::OpOr(Node::Ptr &left, Node::Ptr &right): m_left(left), m_right(right) { set_stmt_type(BuiltinManager::Boolean); }
     
 }

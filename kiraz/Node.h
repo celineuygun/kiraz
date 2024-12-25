@@ -1,7 +1,6 @@
 #ifndef KIRAZ_NODE_H
 #define KIRAZ_NODE_H
 
-#include <algorithm>
 #include <cassert>
 #include <sstream>
 #include <vector>
@@ -16,19 +15,18 @@ extern int yylineno;
 
 class SymbolTable;
 struct Scope;
+class WasmContext;
 class Node : public std::enable_shared_from_this<Node> {
 public:
     using Ptr = std::shared_ptr<Node>;
     using Cptr = std::shared_ptr<const Node>;
 
-    Node() {}
-    Node(int id) : m_id(id) {}
+    Node();
     virtual ~Node();
 
     virtual std::string as_string() const = 0;
     void print() { fmt::print("{}\n", as_string()); }
 
-    auto get_id() const { return m_id; }
     void set_pos(int l, int c) {
         m_line = l;
         m_col = c;
@@ -63,6 +61,8 @@ public:
     virtual bool is_class_stmt_list() const { return false; }
     virtual void set_class_stmt_list() { assert(false); }
 
+    virtual Node::Cptr get_parent() const { return nullptr; }
+
     struct SymTabEntry {
         std::string name;
         Cptr stmt;
@@ -76,6 +76,10 @@ public:
         operator Cptr() const { return stmt; }
         bool first_letter_uppercase() { return name.front() >= 'A' && name.front() <= 'Z'; }
         bool first_letter_lowercase() { return name.front() >= 'a' && name.front() <= 'z'; }
+        bool is_builtin() {
+            return name == "and" || name == "or" || name == "not" || name == "Boolean"
+                    || name == "String" || name == "Integer64";
+        }
     };
     /**
      * @brief compute_stmt_type: Computes resulting type of the statement.
@@ -126,6 +130,7 @@ public:
      * @return The statement pointer if found in the given symtab, otherwise nullptr
      */
     virtual SymTabEntry get_subsymbol(Ptr) const { return {}; }
+    virtual const SymbolTable *get_subsymbol_all() const { return {}; }
 
     /*
      * Static interface
@@ -134,7 +139,11 @@ public:
     static Ptr pop_root();
     static const Ptr &get_root_before();
     static const Ptr &get_first();
-    static void reset_root() { s_roots.emplace_back(); }
+    static const Ptr &get_first_before();
+    static void reset_root() {
+        s_roots.emplace_back();
+        s_next_id = 0;
+    }
     auto get_line() const { return m_line; }
     auto get_col() const { return m_col; }
     const auto &get_error() const { return m_error; }
@@ -158,6 +167,19 @@ public:
     auto get_cur_symtab() { return m_cur_symtab; }
     auto get_cur_symtab() const { return m_cur_symtab; }
 
+    virtual Node::Ptr gen_wat(WasmContext &);
+    virtual Node::Ptr gen_wat(WasmContext &, const std::string &id) const;
+
+    const auto &get_id() const {
+        assert(! m_id.empty());
+        return m_id;
+    }
+
+    void set_id(const std::string &v) {
+        assert(! v.empty());
+        m_id = v;
+    }
+
 protected:
     std::shared_ptr<Scope> m_cur_symtab;
 
@@ -166,8 +188,9 @@ private:
 
     Cptr m_type;
 
+    static int64_t s_next_id;
+    std::string m_id;
     std::string m_error;
-    int m_id;
     int m_line = 0;
     int m_col = 0;
 };
@@ -192,8 +215,9 @@ struct fmt::formatter<std::vector<Node::Ptr>> : fmt::formatter<std::string> {
                 sstr << ", ";
             }
             first = false;
-            sstr << fmt::format("{}", *stmt);
+            sstr << FF("{}", *stmt);
         }
+
         sstr << "]";
 
         return fmt::formatter<std::string>::format(sstr.str(), ctx);

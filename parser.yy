@@ -133,9 +133,9 @@ func_stmt
         auto func = Node::add<ast::FunctionStatement>($2, $4, $6, $8);
         if(func) {
             if(parameters) {
-                parameters->set_parent(func);
+                parameters->set_stmt(func);
                 for (auto& param : param_vector) {
-                    param->set_parent(func);
+                    param->set_stmt(func);
                 }
                 param_vector.clear();
             }

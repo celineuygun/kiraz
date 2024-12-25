@@ -38,7 +38,7 @@ struct ParserFixture : public testing::Test {
         /* verify */
         ASSERT_TRUE(Node::current_root());
         auto root = Node::current_root();
-        ASSERT_EQ(fmt::format("{}", root->as_string()), ast);
+        ASSERT_EQ(FF("{}", root->as_string()), ast);
     }
 
     void verify_single(const std::string &code, const std::string &ast) {

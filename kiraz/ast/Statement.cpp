@@ -141,8 +141,8 @@ namespace ast {
             st.add_symbol(id->get_name(), shared_from_this());
         }
 
-        if(m_parent) {
-            auto id = std::dynamic_pointer_cast<Identifier>(m_parent);
+        if(m_stmt) {
+            auto id = std::dynamic_pointer_cast<Identifier>(m_stmt);
             if(id) {
                 if(!st.lookup(id->get_name())) {
                     return set_error(FF("Type '{}' is not found", id->get_name()));
@@ -180,15 +180,15 @@ namespace ast {
     Node::Ptr Parameter::compute_stmt_type(SymbolTable &st) {
         if(m_name) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_name);
-            auto parent_name = std::dynamic_pointer_cast<Identifier>(m_parent->get_name());
-            if (id && parent_name) {
+            auto stmt_name = std::dynamic_pointer_cast<Identifier>(m_stmt->get_name());
+            if (id && stmt_name) {
                 if(st.lookup(id->get_name())) {
-                     return set_error(FF("Identifier '{}' in argument list of function '{}' is already in symtab", id->get_name(), parent_name->get_name()));
+                     return set_error(FF("Identifier '{}' in argument list of function '{}' is already in symtab", id->get_name(), stmt_name->get_name()));
                 }
                 if(m_type) {
                     auto type = std::dynamic_pointer_cast<Identifier>(m_type);
                     if(!BuiltinManager::get_builtin_type(type->get_name())){
-                        return set_error(FF("Identifier '{}' in type of argument '{}' in function '{}' is not found", type->get_name(), id->get_name(), parent_name->get_name()));
+                        return set_error(FF("Identifier '{}' in type of argument '{}' in function '{}' is not found", type->get_name(), id->get_name(), stmt_name->get_name()));
                     }
                     return m_type->compute_stmt_type(st);
                 } 
@@ -218,8 +218,8 @@ namespace ast {
         if(m_name) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_name);
             if(id) {
-                if(m_parent) {
-                    auto parent_name = std::dynamic_pointer_cast<Identifier>(m_parent->get_name());
+                if(m_stmt) {
+                    auto stmt_name = std::dynamic_pointer_cast<Identifier>(m_stmt->get_name());
                     if (st.is_builtin(id->get_name())) {
                         return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
                     }

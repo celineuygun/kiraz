@@ -5,8 +5,7 @@
 #include <kiraz/token/Literal.h>
 
 namespace ast {
-Integer::Integer(Token::Ptr t) : Node(L_INTEGER) {
-    assert(t->get_id() == L_INTEGER);
+Integer::Integer(Token::Ptr t) {
     auto token_int = std::static_pointer_cast<const token::Integer>(t);
     m_base = token_int->get_base();
     try {
@@ -18,8 +17,7 @@ Integer::Integer(Token::Ptr t) : Node(L_INTEGER) {
     set_stmt_type(BuiltinManager::Integer64);
 }
 
-String::String(Token::Ptr t) : Node(L_STRING) {
-    assert(t->get_id() == L_STRING);
+String::String(Token::Ptr t) {
     auto token_str = std::static_pointer_cast<const token::String>(t);
     m_value = token_str->get_value();
     set_stmt_type(BuiltinManager::String);

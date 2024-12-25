@@ -5,8 +5,7 @@
 
 namespace ast {
 
-Identifier::Identifier(const Token::Ptr &token) : Node(IDENTIFIER) {
-    assert(token->get_id() == IDENTIFIER);
+Identifier::Identifier(const Token::Ptr &token) {
     auto token_id = std::static_pointer_cast<const token::Identifier>(token);
     if (token_id) {
         m_name = token_id->get_value();

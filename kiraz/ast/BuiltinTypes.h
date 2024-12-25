@@ -12,7 +12,7 @@ namespace ast {
 // Base class for type nodes
 class TypeNode : public Node {
 protected:
-    explicit TypeNode(int type) : Node(type) {}
+    explicit TypeNode(int type) {}
 };
 
 class BuiltinType : public TypeNode {

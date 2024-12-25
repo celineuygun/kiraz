@@ -16,7 +16,7 @@ class ParameterList;
 
 class Statement : public Node {
 protected:
-    explicit Statement(int type) : Node(type) {}
+    explicit Statement(int type) {}
 };
 
 class Module : public Statement {
@@ -98,13 +98,13 @@ public:
 class ClassStatement : public Statement {
 private:
     Node::Ptr m_name;
-    Node::Ptr m_parent;
+    Node::Ptr m_stmt;
     Node::Ptr m_stmts; // Contains both methods and member variables
     std::unique_ptr<SymbolTable> m_symtab;
 
 public:
-    ClassStatement(Node::Ptr name, Node::Ptr stmts = nullptr, Node::Ptr parent = nullptr)
-        : Statement(KW_CLASS), m_name(name), m_stmts(stmts), m_parent(parent) {}
+    ClassStatement(Node::Ptr name, Node::Ptr stmts = nullptr, Node::Ptr stmt = nullptr)
+        : Statement(KW_CLASS), m_name(name), m_stmts(stmts), m_stmt(stmt) {}
 
     bool is_class() const override { return true; }
     
@@ -113,18 +113,18 @@ public:
     Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
 
     auto get_name() const { return m_name; }
-    auto get_parent() const { return m_parent; }
+    auto get_stmt() const { return m_stmt; }
     auto get_stmts() const { return m_stmts; }
 
     std::string as_string() const override {
-        std::string parentString;
-        if (m_parent) {
-            parentString = fmt::format(", p={}", m_parent->as_string());
+        std::string stmtString;
+        if (m_stmt) {
+            stmtString = fmt::format(", p={}", m_stmt->as_string());
         }
         return fmt::format("Class(n={}, s=[{}]{})", 
                            m_name->as_string(), 
                            m_stmts ? m_stmts->as_string() : "",
-                           parentString);
+                           stmtString);
     }
 };
 
@@ -200,7 +200,7 @@ class ParameterList : public Statement {
 private:
     Node::Ptr m_first;
     Node::Ptr m_next;
-    std::shared_ptr<FunctionStatement> m_parent;
+    std::shared_ptr<FunctionStatement> m_stmt;
 
 public:
     ParameterList(Node::Ptr first, Node::Ptr next)
@@ -214,8 +214,8 @@ public:
     
     auto get_first() const { return m_first; }
     auto get_next() const { return m_next; }
-    auto get_parent() const { return m_parent; }
-    void set_parent(std::shared_ptr<FunctionStatement> parent) { m_parent = parent; }
+    auto get_stmt() const { return m_stmt; }
+    void set_stmt(std::shared_ptr<FunctionStatement> stmt) { m_stmt = stmt; }
 
     std::string as_string() const override {
         std::string result = "";
@@ -236,7 +236,7 @@ class Parameter : public Statement {
 private:
     Node::Ptr m_name;
     Node::Ptr m_type;
-    std::shared_ptr<FunctionStatement> m_parent;
+    std::shared_ptr<FunctionStatement> m_stmt;
 
 public:
     Parameter(const Node::Ptr &name, const Node::Ptr &type)
@@ -255,8 +255,8 @@ public:
     
     auto get_type() const { return m_type; }
     auto get_name() const { return m_name; }
-    auto get_parent() const { return m_parent; }
-    void set_parent(std::shared_ptr<FunctionStatement> parent) { m_parent = parent; }
+    auto get_stmt() const { return m_stmt; }
+    void set_stmt(std::shared_ptr<FunctionStatement> stmt) { m_stmt = stmt; }
 
     std::string as_string() const override {
         std::string result;

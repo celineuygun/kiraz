@@ -10,7 +10,7 @@ class BuiltinManager;
 
 class Operator : public Node {
 protected:
-    explicit Operator(int op) : Node(op) {}
+    explicit Operator(int op) {}
 };
 
 class OpUnary : public Operator {
@@ -41,66 +41,14 @@ protected:
             assert(right);
         }
 
+    virtual std::string operator_name() const = 0;
+
 public:
     auto get_left() const {return m_left;}
     auto get_right() const {return m_right;}
 
     std::string as_string() const override {
-        assert(get_left());
-        assert(get_right());
-
-        std::string opstr;
-        switch (get_id())
-        {
-        case OP_PLUS:
-            opstr = "Add";
-            break;
-        
-        case OP_MINUS:
-            opstr = "Sub";
-            break;
-        
-        case OP_MULT:
-            opstr = "Mult";
-            break;
-        
-        case OP_DIVF:
-            opstr = "DivF";
-            break;
-
-        case OP_EQUALS:
-            opstr = "OpEq"; 
-        break;
-        
-        case OP_GT: 
-            opstr = "OpGt"; 
-            break;
-        
-        case OP_LT: 
-            opstr = "OpLt"; 
-            break;
-        
-        case OP_GE: 
-            opstr = "OpGe"; 
-            break;
-        
-        case OP_LE: 
-            opstr = "OpLe"; 
-            break;
-
-        case OP_AND: 
-            opstr = "OpAnd"; 
-            break;
-
-        case OP_OR: 
-            opstr = "OpOr"; 
-            break;
-        
-        default:
-            break;
-        }
-
-        return fmt::format("{}(l={}, r={})", opstr, get_left()->as_string(), get_right()->as_string());
+        return fmt::format("{}(l={}, r={})", operator_name(), m_left->as_string(), m_right->as_string());
     }
 
 private:
@@ -118,46 +66,73 @@ protected:
 class OpAdd : public OpBinary {
 public:
     OpAdd(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_PLUS, left, right) {}
+
+protected:
+    std::string operator_name() const override { return "Add"; }
 };
 
 class OpSub : public OpBinary {
 public:
     OpSub(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_MINUS, left, right) {}
+
+protected:
+    std::string operator_name() const override { return "Sub"; }
 };
 
 class OpMult : public OpBinary {
 public:
     OpMult(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_MULT, left, right) {}
+
+protected:
+    std::string operator_name() const override { return "Mult"; }
 };
 
 class OpDivF : public OpBinary {
 public:
     OpDivF(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_DIVF, left, right) {}
+
+protected:
+    std::string operator_name() const override { return "DivF"; }
 };
 
 class OpEquals : public OpBinary {
 public:
     OpEquals(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_EQUALS, left, right) {}
+
+protected:
+    std::string operator_name() const override { return "OpEq"; }
 };
 
 class OpGT : public OpBinary {
 public:
     OpGT(const Node::Ptr &left, const Node::Ptr &right);
+
+protected:
+    std::string operator_name() const override { return "OpGt"; }
 };
 
 class OpLT : public OpBinary {
 public:
     OpLT(const Node::Ptr &left, const Node::Ptr &right);
+
+protected:
+    std::string operator_name() const override { return "OpLt"; }
 };
 
 class OpGE : public OpBinary {
 public:
     OpGE(const Node::Ptr &left, const Node::Ptr &right);
+
+protected:
+    std::string operator_name() const override { return "OpGe"; }
 };
 
 class OpLE : public OpBinary {
 public:
     OpLE(const Node::Ptr &left, const Node::Ptr &right);
+
+protected:
+    std::string operator_name() const override { return "OpLe"; }
 };
 
 class OpAssign : public Node {
@@ -167,7 +142,7 @@ private:
 
 public:
     OpAssign(const Node::Ptr &left, const Node::Ptr &right)
-        : Node(OP_ASSIGN), m_left(left), m_right(right) {
+        : m_left(left), m_right(right) {
             assert(left);
             assert(right);
         }
@@ -187,11 +162,11 @@ private:
 
 public:
     OpDot(Node::Ptr &left, Node::Ptr &right)
-        : Node(OP_DOT), m_left(left), m_right(right) {
+        : m_left(left), m_right(right) {
         }
 
-    auto getLeft() const { return m_left; }
-    auto getRight() const { return m_right; }
+    auto get_left() const { return m_left; }
+    auto get_right() const { return m_right; }
 
     std::string as_string() const override {
         return fmt::format("Dot(l={}, r={})", m_left->as_string(), m_right->as_string());
@@ -206,8 +181,8 @@ private:
 public:
     OpAnd(Node::Ptr &left, Node::Ptr &right);
 
-    auto getLeft() const { return m_left; }
-    auto getRight() const { return m_right; }
+    auto get_left() const { return m_left; }
+    auto get_right() const { return m_right; }
 
     std::string as_string() const override {
         return fmt::format("And(l={}, r={})", m_left->as_string(), m_right->as_string());
@@ -222,8 +197,8 @@ private:
 public:
     OpOr(Node::Ptr &left, Node::Ptr &right);
 
-    auto getLeft() const { return m_left; }
-    auto getRight() const { return m_right; }
+    auto get_left() const { return m_left; }
+    auto get_right() const { return m_right; }
 
     std::string as_string() const override {
         return fmt::format("Or(l={}, r={})", m_left->as_string(), m_right->as_string());

@@ -28,7 +28,7 @@ struct CompilerFixture : public ::testing::Test {
         std::stringstream ostr;
 
         /* perform */
-        compiler.compile_string(code, ostr);
+        compiler.compile_string(code);
 
         /* verify */
         if (! Node::get_root_before()) {
@@ -37,7 +37,7 @@ struct CompilerFixture : public ::testing::Test {
 
         ASSERT_TRUE(Node::get_root_before());
         auto root = Node::get_root_before();
-        ASSERT_EQ(fmt::format("{}", *root), ast);
+        ASSERT_EQ(FF("{}", *root), ast);
     }
 
     void verify_ok(const std::string &code) {
@@ -46,7 +46,7 @@ struct CompilerFixture : public ::testing::Test {
         std::stringstream ostr;
 
         /* perform */
-        compiler.compile_string(code, ostr);
+        compiler.compile_string(code);
 
         /* verify */
         if (! Node::get_root_before()) {
@@ -62,7 +62,7 @@ struct CompilerFixture : public ::testing::Test {
         std::stringstream ostr;
 
         /* perform */
-        compiler.compile_string(code, ostr);
+        compiler.compile_string(code);
 
         /* verify */
         if (Node::get_root_before()) {
@@ -78,7 +78,7 @@ struct CompilerFixture : public ::testing::Test {
         std::stringstream ostr;
 
         /* perform */
-        compiler.compile_string(code, ostr);
+        compiler.compile_string(code);
 
         /* verify */
         if (Node::get_root_before()) {
@@ -360,6 +360,11 @@ TEST_F(CompilerFixture, if_misplaced_class) {
     verify_error(R"(class A{if(true) {};};)", "Misplaced if statement");
 }
 
+TEST_F(CompilerFixture, class_scope_pure) {
+    verify_error(R"(class A{}; func f():Void{let a:A; a.Integer64;};)",
+            "Identifier 'a' has no subsymbol 'Integer64'");
+}
+
 TEST_F(CompilerFixture, if_test_int) {
     verify_error(R"(func f():Void{if(1) {};};)", "If only accepts tests of type 'Boolean'");
 }
@@ -376,7 +381,6 @@ TEST_F(CompilerFixture, func_use_before_definition) {
     verify_ok(R"(import io;
         func say_hello() : Void {
             let h = get_hello();
-            io.print(h);
         };
         func get_hello() : String {
             return "Hello, World!\n";
@@ -404,12 +408,12 @@ TEST_F(CompilerFixture, let_type_mismatch_func) {
         };
         func g() : String { };
         )",
-            "Initializer type 'String' doesn't match explicit type 'Integer64'");
+            "Initializer type 'String' does not match explicit type 'Integer64'");
 }
 
 TEST_F(CompilerFixture, let_type_mismatch_var) {
     verify_error(R"(func f() : Void { let h : Integer64 = "string"; };)",
-            "Initializer type 'String' doesn't match explicit type 'Integer64'");
+            "Initializer type 'String' does not match explicit type 'Integer64'");
 }
 
 TEST_F(CompilerFixture, assignment_type_mismatch_var) {
@@ -434,9 +438,20 @@ TEST_F(CompilerFixture, func_call_argnum_mismatch) {
 }
 
 TEST_F(CompilerFixture, func_call_type_mismatch) {
-    verify_error("import io; func f() : Void { io.print(42); };",
-            "Argument 1 in call to function 'io.print' has type 'Integer64'"
+    verify_error("func g(s: String): Void{ };func f() : Void { g(42); };",
+            "Argument 1 in call to function 'g' has type 'Integer64'"
             " which does not match definition type 'String'");
 }
 
+TEST_F(CompilerFixture, io_print_call_overload_int) {
+    verify_ok("import io; func f() : Void { io.print(42); };");
+}
+
+TEST_F(CompilerFixture, io_print_call_overload_bool) {
+    verify_ok("import io; func f() : Void { io.print(true); };");
+}
+
+TEST_F(CompilerFixture, io_print_call_overload_custom) {
+    verify_error("import io; class C {}; func f() : Void { let c: C; io.print(c); };");
+}
 } // namespace kiraz

@@ -156,8 +156,6 @@ add_library(kiraz STATIC
 
 add_executable(kirazc main.cpp)
 target_link_libraries(kirazc PRIVATE kiraz)
-
 add_definitions(-DYYDEBUG=1)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${FLEX_LIBRARIES})
 
 include(test.cmake)
