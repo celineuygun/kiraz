@@ -1,5 +1,6 @@
 #include "Statement.h"
 #include <iostream>
+#include <fstream>
 #include <memory>
 
 namespace ast {
@@ -9,7 +10,6 @@ namespace ast {
         if(m_statements) {
             assert(m_statements->is_stmt_list());
             set_cur_symtab(st.get_cur_symtab());
-            // st.print();
 
             auto current = std::dynamic_pointer_cast<StatementList>(m_statements);
             while (current) {
@@ -50,6 +50,13 @@ namespace ast {
 
     // ImportStatement
     Node::Ptr ImportStatement::compute_stmt_type(SymbolTable &st) {
+        if (m_identifier) {
+            auto id = std::dynamic_pointer_cast<Identifier>(m_identifier);
+            if (!id) {
+                return set_error("Import statement is missing an identifier");
+            }
+        }
+
         return nullptr;
     }
 
@@ -57,13 +64,71 @@ namespace ast {
         return nullptr;
     }
 
+    void ImportStatement::integrate_module_symbols(Node::Ptr moduleAST, SymbolTable &st) {
+        if (!moduleAST) {
+            return;
+        }
+        auto module = std::dynamic_pointer_cast<Module>(moduleAST);
+        auto stmts = module->get_statements();
+        if(!stmts) {
+            return;
+        }
+        auto stmtList = std::dynamic_pointer_cast<StatementList>(stmts);
+        if(!stmtList) return;
+        auto current = stmtList;
+        while (current) {
+            if (current->get_first()) {
+                auto first = current->get_first();
+
+                if (auto ret = first->add_to_symtab_ordered(st)) {
+                    std::cerr << "Error in add_to_symtab_ordered: " << ret->as_string() << std::endl;
+                    return;
+                }
+            }
+            current = std::dynamic_pointer_cast<StatementList>(current->get_next());
+        }
+    }
+
     Node::Ptr ImportStatement::add_to_symtab_ordered(SymbolTable &st) {
         if(m_identifier) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_identifier);
+            if (!id) {
+                return set_error(FF("Import statement is missing an identifier"));
+            }
             if (st.is_builtin(id->get_name())) {
                 return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
             }
-            st.add_symbol(id->get_name(), shared_from_this());
+
+            std::string moduleName = id->get_name();
+
+            if (moduleName == "io") {
+                auto ioModule = st.get_module_io();
+                if (!ioModule) {
+                    return set_error("Precompiled module 'io' is unavailable");
+                }
+
+                integrate_module_symbols(ioModule, st);
+            } else {
+                std::string filePath = resolve_module_path(moduleName);
+                if (filePath.empty()) {
+                    return set_error(FF("Module '{}' not found", moduleName));
+                }
+
+                std::ifstream file(filePath);
+                if (!file.is_open()) {
+                    return set_error(fmt::format("Unable to open file '{}'", filePath));
+                }
+
+                std::string fileContent((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+                file.close();
+
+                auto moduleAST = Compiler::current()->compile_module(fileContent);
+                if (!moduleAST) {
+                    return set_error(fmt::format("Failed to parse module '{}'", moduleName));
+                }
+
+                integrate_module_symbols(moduleAST, st);
+            }
         }
         return nullptr;
     }
@@ -103,6 +168,7 @@ namespace ast {
     Node::Ptr ClassStatement::compute_stmt_type(SymbolTable &st) {
         set_cur_symtab(st.get_cur_symtab());
         auto scope = st.enter_scope(ScopeType::Class, shared_from_this());
+
         if(m_stmts) {
             assert(m_stmts->is_stmt_list());
 
@@ -149,7 +215,7 @@ namespace ast {
                 } 
             }
         }
-
+        // st.print();
         return nullptr;
     }
 
@@ -204,10 +270,6 @@ namespace ast {
                 if (st.is_builtin(id->get_name())) {
                     return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
                 }
-                // if(st.lookup(id->get_name())) {
-                //     std::cout << "!!!" << std::endl;
-                //     return set_error(FF("Identifier '{}' is already in symtab", id->get_name()));
-                // }
             }
             m_name->add_to_symtab_forward(st);
         }
@@ -224,10 +286,10 @@ namespace ast {
                         return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
                     }
                 }
-                // if(st.lookup(id->get_name())) {
-                //         std::cout << "!!!" << std::endl;
-                //     return set_error(FF("Identifier '{}' is already in symtab", id->get_name()));
-                // }
+                if(st.lookup(id->get_name())) {
+                        std::cout << "!!!" << std::endl;
+                    return set_error(FF("Identifier '{}' is already in symtab", id->get_name()));
+                }
             }
             m_name->add_to_symtab_ordered(st);
         }
@@ -307,6 +369,7 @@ namespace ast {
     Node::Ptr FunctionStatement::compute_stmt_type(SymbolTable &st) {
         set_cur_symtab(st.get_cur_symtab());
         auto scope = st.enter_scope(ScopeType::Func, shared_from_this());
+
 
         Node::Ptr error;
         if (m_returnType) {

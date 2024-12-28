@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WASM Loader</title>
+</head>
+<body>
+    <script>
+        async function loadWasm(fileName) {
+            try {
+                const response = await fetch(fileName);
+                const buffer = await response.arrayBuffer();
+
+                // Inspect the module's imports
+                const module = await WebAssembly.compile(buffer);
+                const importsInfo = WebAssembly.Module.imports(module);
+                console.log("Required imports:", importsInfo);
+
+                // Provide the necessary imports
+                const imports = {
+                    io: {
+                        // Define functions or objects required by "io"
+                        print: (value) => console.log("WASM Print:", value),
+                    },
+                    env: {
+                        memory: new WebAssembly.Memory({ initial: 256, maximum: 256 }),
+                    },
+                };
+
+                const { instance } = await WebAssembly.instantiate(buffer, imports);
+
+                console.log("WASM module loaded successfully.");
+                console.log("Exports:", instance.exports);
+
+                // Example: Call an exported function (adjust as needed)
+                if (instance.exports._start) {
+                    instance.exports._start();
+                }
+            } catch (err) {
+                console.error("Error loading WASM module:", err);
+            }
+        }
+
+        // Load your WASM file (replace 'module_hello.wasm' with your file)
+        loadWasm("module_hello.wasm");
+    </script>
+</body>
+</html>

@@ -154,6 +154,12 @@ add_library(kiraz STATIC
     main.h
 )
 
+add_custom_target(run_loader
+    COMMAND ${CMAKE_COMMAND} -E env BROWSER=${BROWSER} open loader.html
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Opening loader.html in the default web browser"
+)
+
 add_executable(kirazc main.cpp)
 target_link_libraries(kirazc PRIVATE kiraz)
 add_definitions(-DYYDEBUG=1)

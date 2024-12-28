@@ -96,6 +96,22 @@ public:
         return nullptr;
     }
 
+    Node::Ptr lookup_in_current_scope(const std::string &name) const {
+        if (m_symbols.empty()) {
+            return nullptr;
+        }
+
+        const auto &current_scope = m_symbols.back();
+        if (current_scope) {
+            auto symbol = current_scope->find(name);
+            if (symbol != current_scope->end()) {
+                return symbol->second; 
+            }
+        }
+        return nullptr;
+    }
+
+
     bool is_builtin(const std::string &name) {
         static const std::unordered_set<std::string> builtins = {"and", "or", "not", "Boolean", "Integer64", "Void", "String" };
         return builtins.find(name) != builtins.end();

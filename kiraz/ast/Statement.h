@@ -4,10 +4,13 @@
 #include <cassert>
 #include <string>
 #include <memory> 
+#include <filesystem>
 #include "kiraz/Node.h"
 #include "kiraz/Compiler.h"
 #include "Identifier.h"
 #include "BuiltinTypes.h"
+
+namespace fs = std::filesystem;
 
 namespace ast {
 
@@ -29,6 +32,8 @@ public:
 
     bool is_stmt_list() const override { return true; }
 
+    auto get_statements() const { return m_statements; }
+
     Node::Ptr compute_stmt_type(SymbolTable &st) override;
     Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
     Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
@@ -37,6 +42,39 @@ public:
     return fmt::format("Module([{}])", m_statements ? m_statements->as_string() : "");
     }
 
+};
+
+class StatementList : public Statement {
+private:
+    Node::Ptr m_first;
+    Node::Ptr m_next;
+
+public:
+    StatementList(Node::Ptr first, Node::Ptr next)
+        : Statement(IDENTIFIER), m_first(first), m_next(next) {}
+
+    bool is_stmt_list() const override { return true; }
+    
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+    
+    auto get_first() const { return m_first; } 
+    auto get_next() const { return m_next; }
+
+    std::string as_string() const override {
+        std::string result = "";
+
+        if (m_first) {
+            result += m_first->as_string();
+        }
+
+        if (m_next) {
+            result += ", " + m_next->as_string();
+        }
+
+        return result;
+    }
 };
 
 class ImportStatement : public Statement {
@@ -56,6 +94,22 @@ public:
     Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
 
     auto get_identifier() const { return m_identifier; }
+
+    std::string resolve_module_path(const std::string &moduleName) {
+        std::vector<std::string> searchPaths = { "./", "/usr/include/", "/usr/local/include/" };
+
+        for (const auto &path : searchPaths) {
+            std::string fullPath = path + moduleName + ".ki";
+            if (fs::exists(fullPath)) {
+                std::cout << "Found module: " << fullPath << std::endl;
+                return fullPath;
+            }
+        }
+        std::cout << "Module not found: " << moduleName << std::endl;
+        return "";
+    }
+
+    void integrate_module_symbols(Node::Ptr moduleAST, SymbolTable &st);
 
     std::string as_string() const override {
         return fmt::format("Import({})", m_identifier->as_string());
@@ -138,7 +192,7 @@ private:
 
 public:
     FunctionStatement(Node::Ptr name, Node::Ptr parameters, Node::Ptr returnType, Node::Ptr body)
-        : Statement(KW_FUNC), 
+        : Statement(KW_FUNC),
           m_name(name), 
           m_returnType(returnType ? returnType : BuiltinManager::Void),
           m_parameters(parameters), 
@@ -266,39 +320,6 @@ public:
     
         else {
             result = fmt::format("{}", m_name->as_string());
-        }
-
-        return result;
-    }
-};
-
-class StatementList : public Statement {
-private:
-    Node::Ptr m_first;
-    Node::Ptr m_next;
-
-public:
-    StatementList(Node::Ptr first, Node::Ptr next)
-        : Statement(IDENTIFIER), m_first(first), m_next(next) {}
-
-    bool is_stmt_list() const override { return true; }
-    
-    Node::Ptr compute_stmt_type(SymbolTable &st) override;
-    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
-    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
-    
-    auto get_first() const { return m_first; } 
-    auto get_next() const { return m_next; }
-
-    std::string as_string() const override {
-        std::string result = "";
-
-        if (m_first) {
-            result += m_first->as_string();
-        }
-
-        if (m_next) {
-            result += ", " + m_next->as_string();
         }
 
         return result;
