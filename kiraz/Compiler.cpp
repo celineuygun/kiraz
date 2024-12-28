@@ -111,10 +111,25 @@ SymbolTable::SymbolTable(ScopeType scope_type) : SymbolTable() {
 }
 
 WasmContext::Coords WasmContext::add_to_memory(const std::string &s) {
-    assert(! s.empty());
-    return {}; // TODO:
+    assert(!s.empty());
+    uint32_t offset = m_memory.size();
+    m_memory.insert(m_memory.end(), s.begin(), s.end());
+    m_memory.push_back('\0');
+    return Coords(offset, static_cast<uint32_t>(s.size()));
 }
 
+
 WasmContext::Coords WasmContext::add_to_memory(uint32_t s) {
-    return {}; // TODO:
+    uint32_t offset = m_memory.size();
+
+    unsigned char bytes[4];
+    bytes[0] = static_cast<unsigned char>(s & 0xFF);
+    bytes[1] = static_cast<unsigned char>((s >> 8) & 0xFF);
+    bytes[2] = static_cast<unsigned char>((s >> 16) & 0xFF);
+    bytes[3] = static_cast<unsigned char>((s >> 24) & 0xFF);
+
+    m_memory.insert(m_memory.end(), bytes, bytes + 4);
+
+    return Coords(offset, 4);
 }
+

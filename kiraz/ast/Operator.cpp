@@ -39,4 +39,22 @@ Node::Ptr OpAdd::compute_stmt_type(SymbolTable &st) {
     //     return std::const_pointer_cast<Node>(leftType);
         return nullptr;
     }
+
+    Node::Ptr OpAdd::gen_wat(WasmContext &ctx) {
+        auto m_left = get_left();
+        auto m_right = get_right();
+        
+        if (m_left) {
+            m_left->gen_wat(ctx);
+        }
+
+        if (m_right) {
+            m_right->gen_wat(ctx);
+        }
+
+        ctx.body() << "i64.add\n";
+
+        return nullptr;
+    }
+
 }

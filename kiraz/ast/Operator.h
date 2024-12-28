@@ -2,7 +2,7 @@
 #define KIRAZ_AST_OPERATOR_H
 
 #include <cassert>
-
+#include "kiraz/Compiler.h"
 #include <kiraz/Node.h>
 
 namespace ast {
@@ -68,6 +68,7 @@ public:
     OpAdd(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_PLUS, left, right) {}
 
     Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr gen_wat(WasmContext &ctx) override;
 
 protected:
     std::string operator_name() const override { return "Add"; }

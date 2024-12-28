@@ -6,7 +6,6 @@
 #include <memory> 
 #include <filesystem>
 #include "kiraz/Node.h"
-#include "kiraz/Compiler.h"
 #include "Identifier.h"
 #include "BuiltinTypes.h"
 
@@ -37,6 +36,8 @@ public:
     Node::Ptr compute_stmt_type(SymbolTable &st) override;
     Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
     Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+
+    Node::Ptr gen_wat(WasmContext &ctx) override;
 
     std::string as_string() const override {
     return fmt::format("Module([{}])", m_statements ? m_statements->as_string() : "");
@@ -204,6 +205,8 @@ public:
     Node::Ptr compute_stmt_type(SymbolTable &st) override;
     Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
     Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+
+    Node::Ptr gen_wat(WasmContext &ctx) override;
     
     auto get_name() const { return m_name; }
     auto get_return_type() const { return m_returnType; }
@@ -345,6 +348,15 @@ public:
     Node::Ptr compute_stmt_type(SymbolTable &st) override;
     Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
     Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+
+    Node::Ptr gen_wat(WasmContext &ctx) override {
+        if (m_value) {
+            m_value->gen_wat(ctx);
+        }
+        auto id = std::dynamic_pointer_cast<Identifier>(m_identifier);
+        ctx.locals() << "(local $" << id->get_name() << " i64)\n";
+        return nullptr;
+    }
     
     LetStatement(const Node::Ptr &identifier, const Node::Ptr &type, const Node::Ptr &value)
         : Statement(KW_LET), m_identifier(identifier), m_type(type), m_value(value) {
@@ -423,7 +435,32 @@ public:
     Node::Ptr compute_stmt_type(SymbolTable &st) override;
     Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
     Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
-    
+
+    Node::Ptr gen_wat(WasmContext &ctx) override {
+        ctx.body() << "(if \n";
+
+        ctx.body() << "  (condition\n";
+        if (m_condition) {
+            m_condition->gen_wat(ctx);
+        }
+        ctx.body() << "  )\n";
+
+        ctx.body() << "  (then\n";
+        if (m_thenBranch) {
+            m_thenBranch->gen_wat(ctx);
+        }
+        ctx.body() << "  )\n";
+
+        if (m_elseBranch) {
+            ctx.body() << "  (else\n";
+            m_elseBranch->gen_wat(ctx);
+            ctx.body() << "  )\n";
+        }
+
+        ctx.body() << ")\n";
+        return nullptr;
+    }
+
     auto get_condition() const { return m_condition; }
     auto get_then_branch() const { return m_thenBranch; }
     auto get_else_branch() const { return m_elseBranch; }
