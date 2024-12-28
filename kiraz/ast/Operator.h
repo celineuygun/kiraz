@@ -155,23 +155,6 @@ public:
     }
 };
 
-class OpDot : public Node {
-private:
-    Node::Ptr m_left;
-    Node::Ptr m_right;
-
-public:
-    OpDot(Node::Ptr &left, Node::Ptr &right)
-        : m_left(left), m_right(right) {
-        }
-
-    auto get_left() const { return m_left; }
-    auto get_right() const { return m_right; }
-
-    std::string as_string() const override {
-        return fmt::format("Dot(l={}, r={})", m_left->as_string(), m_right->as_string());
-    }
-};
 
 class OpAnd : public Node {
 private:

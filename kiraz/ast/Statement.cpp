@@ -135,8 +135,35 @@ namespace ast {
 
     // CallStatement
     Node::Ptr CallStatement::compute_stmt_type(SymbolTable &st) {
+        std::cout << "CallStatement::compute_stmt_type" << std::endl;
         if(m_callee) {
-            return m_callee->compute_stmt_type(st);
+            auto callee_id = std::dynamic_pointer_cast<Identifier>(m_callee);
+            if (callee_id) {
+                auto callee_symbol = st.lookup(callee_id->get_name());
+                if (!callee_symbol) {
+                    // return set_error(fmt::format("Variable '{}' is not defined.", callee_id->get_name()));
+                    return nullptr;
+                }
+
+                auto class_stmt = std::dynamic_pointer_cast<ClassStatement>(callee_symbol);
+                if (!class_stmt) {
+                    return set_error(fmt::format("Variable '{}' is not a class instance.", callee_id->get_name()));
+                }
+
+                if (!class_stmt->get_symtab()) {
+                    return set_error(fmt::format("Class '{}' has no symbol table.", callee_id->get_name()));
+                }
+
+                auto sub_id = std::dynamic_pointer_cast<Identifier>(m_arguments);
+                if (sub_id) {
+                    auto sub_symbol = class_stmt->get_symtab()->lookup(sub_id->get_name());
+                    if (!sub_symbol) {
+                        return set_error(fmt::format("Identifier '{}' is not found", sub_id->get_name()));
+                    }
+                }
+
+            }
+            return nullptr;
         }
         if(m_arguments) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_arguments);
@@ -151,12 +178,14 @@ namespace ast {
     }
 
     Node::Ptr CallStatement::add_to_symtab_forward(SymbolTable &st) {
-        if(m_callee)
+        std::cout << "CallStatement::add_to_symtab_forward" << std::endl;
+        if(m_callee) 
             m_callee->add_to_symtab_forward(st);
         return nullptr;
     }
 
     Node::Ptr CallStatement::add_to_symtab_ordered(SymbolTable &st) {
+        std::cout<< "CallStatement::add_to_symtab_ordered" << std::endl;
         if(m_callee)
             m_callee->add_to_symtab_ordered(st);
         if(m_arguments)
@@ -168,6 +197,10 @@ namespace ast {
     Node::Ptr ClassStatement::compute_stmt_type(SymbolTable &st) {
         set_cur_symtab(st.get_cur_symtab());
         auto scope = st.enter_scope(ScopeType::Class, shared_from_this());
+
+        // if (!m_symtab) {
+        //     m_symtab = std::make_unique<SymbolTable>();
+        // }
 
         if(m_stmts) {
             assert(m_stmts->is_stmt_list());
@@ -187,7 +220,7 @@ namespace ast {
                 }
                 current = std::dynamic_pointer_cast<StatementList>(current->get_next());
             }
-            // st.print();
+            st.print();
         }
         return nullptr;
     }
@@ -207,24 +240,69 @@ namespace ast {
             st.add_symbol(id->get_name(), shared_from_this());
         }
 
-        if(m_stmt) {
-            auto id = std::dynamic_pointer_cast<Identifier>(m_stmt);
+        if(m_parent_class) {
+            auto id = std::dynamic_pointer_cast<Identifier>(m_parent_class);
             if(id) {
                 if(!st.lookup(id->get_name())) {
                     return set_error(FF("Type '{}' is not found", id->get_name()));
                 } 
             }
         }
-        // st.print();
+        if (m_stmts) {
+            auto current = std::dynamic_pointer_cast<StatementList>(m_stmts);
+            while (current) {
+                if (current->get_first()) {
+                    auto ret = current->get_first()->add_to_symtab_ordered(*m_symtab);
+                    if (ret) {
+                        return ret;
+                    }
+                }
+                current = std::dynamic_pointer_cast<StatementList>(current->get_next());
+            }
+        }
+        st.print();
         return nullptr;
     }
 
-    Node::Ptr ClassStatement::add_to_symtab_ordered(SymbolTable &st) {
-        if (m_stmts) {
-            m_stmts->add_to_symtab_ordered(st);
-        }
-        return nullptr;
+Node::Ptr ClassStatement::add_to_symtab_ordered(SymbolTable &st) {
+    if (!m_symtab) {
+        std::cout << "****Creating new symbol table" << std::endl;
+        m_symtab = std::make_unique<SymbolTable>(ScopeType::Class);
     }
+    if (m_stmts) {
+        auto current = std::dynamic_pointer_cast<StatementList>(m_stmts);
+        while (current) {
+            if (current->get_first()) {
+                auto member = current->get_first();
+                
+                // Check if it's a LetStatement (variable declaration)
+                auto letStmt = std::dynamic_pointer_cast<LetStatement>(member);
+                if (letStmt && letStmt->get_identifier()) {
+                    auto id = std::dynamic_pointer_cast<Identifier>(letStmt->get_identifier());
+                    if (id) {
+                        m_symtab->add_symbol(id->get_name(), member);
+                        std::cout << "\tAdded variable: " << id->get_name() << " -> " << member->as_string() << std::endl;
+                    }
+                }
+
+                // Check if it's a FunctionStatement (method declaration)
+                auto funcStmt = std::dynamic_pointer_cast<FunctionStatement>(member);
+                if (funcStmt && funcStmt->get_name()) {
+                    auto id = std::dynamic_pointer_cast<Identifier>(funcStmt->get_name());
+                    if (id) {
+                        m_symtab->add_symbol(id->get_name(), member);
+                        std::cout << "\tAdded function: " << id->get_name() << " -> " << member->as_string() << std::endl;
+                    }
+                }
+            }
+            current = std::dynamic_pointer_cast<StatementList>(current->get_next());
+        }
+    }
+    m_symtab->print();
+
+    return nullptr;
+}
+
 
     // ReturnStatement
     Node::Ptr ReturnStatement::compute_stmt_type(SymbolTable &st) {
@@ -335,7 +413,9 @@ namespace ast {
 
     // StatementList
     Node::Ptr StatementList::compute_stmt_type(SymbolTable &st) {
+        std::cout << "StatementList::compute_stmt_type" << std::endl;
         if (m_first) {
+            std::cout << m_first->as_string() << std::endl;
             Node::Ptr error = m_first->compute_stmt_type(st);
             if (error) return error;
             if (m_next) {
@@ -346,7 +426,9 @@ namespace ast {
     }
 
     Node::Ptr StatementList::add_to_symtab_forward(SymbolTable &st) {
+            std::cout << "StatementList::add_to_symtab_forward" << std::endl;
         if (m_first) {
+            std::cout << "m_first" << m_first->as_string() << std::endl;
             m_first->add_to_symtab_forward(st);
         }
         if (m_next) {
@@ -356,7 +438,9 @@ namespace ast {
     }
 
     Node::Ptr StatementList::add_to_symtab_ordered(SymbolTable &st) {
+        std::cout << "StatementList::add_to_symtab_ordered" << std::endl;
         if (m_first) {
+            std::cout << "m_first" << m_first->as_string() << std::endl;
             m_first->add_to_symtab_ordered(st);
         }
         if (m_next) {
@@ -418,6 +502,7 @@ namespace ast {
 
 
     Node::Ptr FunctionStatement::add_to_symtab_forward(SymbolTable &st) {
+        std::cout << "FunctionStatement::add_to_symtab_forward" << std::endl;
         if(m_name) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_name);
             if (st.is_builtin(id->get_name())) {
@@ -432,14 +517,27 @@ namespace ast {
     }
 
     Node::Ptr FunctionStatement::add_to_symtab_ordered(SymbolTable &st) {
+        std::cout << "FunctionStatement::add_to_symtab_ordered" << std::endl;
+        if (!m_symtab) {
+            std::cout << "****Creating new symbol table" << std::endl;
+            m_symtab = std::make_unique<SymbolTable>(ScopeType::Func);
+        }
         if (m_parameters) {
-            auto error = m_parameters->add_to_symtab_ordered(st);
+            std::cout << "m_parameters" << m_parameters->as_string() << std::endl;
+            auto error = m_parameters->add_to_symtab_ordered(*m_symtab);
             if (error) {
                 return error; 
             }
         }
         if (m_body) {
-            m_body->add_to_symtab_ordered(st);
+            auto current = std::dynamic_pointer_cast<StatementList>(m_body);
+            while (current) {
+                if (current->get_first()) {
+                    auto ret = current->get_first()->add_to_symtab_ordered(*m_symtab);
+                    if (ret) return ret;
+                }
+                current = std::dynamic_pointer_cast<StatementList>(current->get_next());
+            }
         }
         return nullptr;
     }
@@ -479,12 +577,73 @@ namespace ast {
     }
 
     Node::Ptr AssignmentStatement::compute_stmt_type(SymbolTable &st) {
+        std::cout << "AssignmentStatement::compute_stmt_type" << std::endl;
         if (m_left) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_left);
-            if (st.is_builtin(id->get_name())) {
-                return set_error(fmt::format("Overriding builtin '{}' is not allowed", id->get_name()));
+            if(id) {
+                if (st.is_builtin(id->get_name())) {
+                    return set_error(fmt::format("Overriding builtin '{}' is not allowed", id->get_name()));
+                }
+                return m_left->compute_stmt_type(st);
             }
-            return m_left->compute_stmt_type(st);
+            auto dotExpr = std::dynamic_pointer_cast<OpDot>(m_left);
+            if (dotExpr) {
+                Node::Ptr leftTypeError = m_left->compute_stmt_type(st);
+                if (leftTypeError) {
+                    return leftTypeError;
+                }
+
+                auto parent = dotExpr->get_left();
+                auto member = dotExpr->get_right();
+
+                auto parentId = std::dynamic_pointer_cast<Identifier>(parent);
+                if (parentId) {
+                    auto parentSymbol = st.lookup(parentId->get_name());
+                    if (!parentSymbol) {
+                        return set_error(fmt::format("Object '{}' is not defined", parentId->get_name()));
+                    }
+
+                    auto parentClass = std::dynamic_pointer_cast<ClassStatement>(parentSymbol);
+                    auto parentLet = std::dynamic_pointer_cast<LetStatement>(parentSymbol);
+                    if (parentLet) {
+                        auto parentClassId = std::dynamic_pointer_cast<Identifier>(parentLet->get_type());
+                        if (parentClassId) {
+                            auto classSymbol = st.lookup(parentClassId->get_name());
+                            parentClass = std::dynamic_pointer_cast<ClassStatement>(classSymbol);
+                        }
+                    }
+
+                    if (!parentClass) {
+                        return set_error(fmt::format("'{}' is not a class instance", parentId->get_name()));
+                    }
+
+                    std::cout << "parentClass: " << parentClass->as_string() << std::endl;
+
+                    auto memberId = std::dynamic_pointer_cast<Identifier>(member);
+                    std::cout << "memberId: " << memberId->get_name() << std::endl;
+
+                    st.print();
+                    if (memberId) {
+                        auto classSymTab = parentClass->get_symtab();
+                        if (!classSymTab) {
+                            return set_error(fmt::format("Class '{}' has no symbol table", parentClass->as_string()));
+                        }
+
+                        auto memberSymbol = classSymTab->lookup(memberId->get_name());
+                        if(classSymTab) {
+                            std::cout << "Class symbol table found" << std::endl;
+                            classSymTab->print();
+                        }
+                        if (!memberSymbol) {
+                            std::string fullExpression = fmt::format("{}.{}", parentId->get_name(), memberId->get_name());
+                            return set_error(fmt::format("Identifier '{}' is not found", fullExpression));
+                        }
+                        
+                        return nullptr;
+                    }
+                    return nullptr;
+                }
+            }
         }
         if (m_right) {
             Node::Ptr rightError = m_right->compute_stmt_type(st);
@@ -496,6 +655,7 @@ namespace ast {
     }
 
     Node::Ptr AssignmentStatement::add_to_symtab_forward(SymbolTable &st) {
+        std::cout << "AssignmentStatement::add_to_symtab_forward" << std::endl;
         if (m_left) {
             return m_left->add_to_symtab_forward(st);
         }
@@ -503,6 +663,7 @@ namespace ast {
     }
 
     Node::Ptr AssignmentStatement::add_to_symtab_ordered(SymbolTable &st) {
+        std::cout << "AssignmentStatement::add_to_symtab_ordered" << std::endl;
         if (m_left) {
             m_left->add_to_symtab_ordered(st);
         }
@@ -585,4 +746,62 @@ namespace ast {
         }
         return nullptr;
     }
+
+    Node::Ptr OpDot::compute_stmt_type(SymbolTable &st) {
+        Node::Ptr leftError = m_left->compute_stmt_type(st);
+        if (leftError) {
+            return leftError;
+        }
+
+        auto leftIdentifier = std::dynamic_pointer_cast<Identifier>(m_left);
+        if (!leftIdentifier) {
+            return set_error("Left-hand side of dot expression must be an identifier");
+        }
+
+        auto leftSymbol = st.lookup(leftIdentifier->get_name());
+        if (!leftSymbol) {
+            return set_error(fmt::format("Object '{}' is not defined", leftIdentifier->get_name()));
+        }
+
+        auto leftClass = std::dynamic_pointer_cast<ClassStatement>(leftSymbol);
+        auto leftLet = std::dynamic_pointer_cast<LetStatement>(leftSymbol);
+        if (leftLet) {
+            auto classType = std::dynamic_pointer_cast<Identifier>(leftLet->get_type());
+            if (classType) {
+                auto classSymbol = st.lookup(classType->get_name());
+                leftClass = std::dynamic_pointer_cast<ClassStatement>(classSymbol);
+            }
+        }
+
+        if (!leftClass) {
+            return set_error(fmt::format("'{}' is not a class instance", leftIdentifier->get_name()));
+        }
+
+        auto classSymTab = leftClass->get_symtab();
+        if (!classSymTab) {
+            return set_error(fmt::format("Class '{}' has no symbol table", leftClass->as_string()));
+        }
+
+        auto rightIdentifier = std::dynamic_pointer_cast<Identifier>(m_right);
+        if (!rightIdentifier) {
+            return set_error("Right-hand side of dot expression must be an identifier");
+        }
+
+        auto memberSymbol = classSymTab->lookup(rightIdentifier->get_name());
+        if (!memberSymbol) {
+            std::string fullExpression = fmt::format("{}.{}", leftIdentifier->get_name(), rightIdentifier->get_name());
+            return set_error(fmt::format("Identifier '{}' is not found", fullExpression));
+        }
+
+        return nullptr;
+    }
+
+    Node::Ptr OpDot::add_to_symtab_forward(SymbolTable &st) {
+        return nullptr;
+    }
+
+    Node::Ptr OpDot::add_to_symtab_ordered(SymbolTable &st) {
+        return nullptr;
+    }
+
 }

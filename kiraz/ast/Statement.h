@@ -152,13 +152,13 @@ public:
 class ClassStatement : public Statement {
 private:
     Node::Ptr m_name;
-    Node::Ptr m_stmt;
+    Node::Ptr m_parent_class;
     Node::Ptr m_stmts; // Contains both methods and member variables
     std::unique_ptr<SymbolTable> m_symtab;
 
 public:
-    ClassStatement(Node::Ptr name, Node::Ptr stmts = nullptr, Node::Ptr stmt = nullptr)
-        : Statement(KW_CLASS), m_name(name), m_stmts(stmts), m_stmt(stmt) {}
+    ClassStatement(Node::Ptr name, Node::Ptr stmts = nullptr, Node::Ptr parent_class = nullptr)
+        : Statement(KW_CLASS), m_name(name), m_stmts(stmts), m_parent_class(parent_class) {}
 
     bool is_class() const override { return true; }
     
@@ -167,13 +167,14 @@ public:
     Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
 
     auto get_name() const { return m_name; }
-    auto get_stmt() const { return m_stmt; }
+    auto get_parent_class() const { return m_parent_class; }
     auto get_stmts() const { return m_stmts; }
+    auto get_symtab() const { return m_symtab.get(); }
 
     std::string as_string() const override {
         std::string stmtString;
-        if (m_stmt) {
-            stmtString = fmt::format(", p={}", m_stmt->as_string());
+        if (m_parent_class) {
+            stmtString = fmt::format(", p={}", m_parent_class->as_string());
         }
         return fmt::format("Class(n={}, s=[{}]{})", 
                            m_name->as_string(), 
@@ -484,6 +485,29 @@ public:
                            repeatString);
     }
 };
+
+class OpDot : public Statement {
+private:
+    Node::Ptr m_left;
+    Node::Ptr m_right;
+
+public:
+    OpDot(Node::Ptr &left, Node::Ptr &right)
+        : Statement(OP_DOT), m_left(left), m_right(right) {
+        }
+
+    auto get_left() const { return m_left; }
+    auto get_right() const { return m_right; }
+
+    std::string as_string() const override {
+        return fmt::format("Dot(l={}, r={})", m_left->as_string(), m_right->as_string());
+    }
+
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
+    Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
+};
+
 
 }
 

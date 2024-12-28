@@ -213,6 +213,13 @@ assign_stmt
             $4
         );
     }
+    | dot_expr OP_ASSIGN expr OP_SCOLON
+    {
+        $$ = Node::add<ast::AssignmentStatement>(
+            $1, // Left-hand side as a dot_expr
+            $3  // Right-hand side expression
+        );
+    }
     ;
 
 call_expr
