@@ -1,4 +1,5 @@
 #include "Statement.h"
+#include "Literal.h"
 #include <iostream>
 #include <fstream>
 #include <memory>
@@ -108,6 +109,7 @@ namespace ast {
                 }
 
                 integrate_module_symbols(ioModule, st);
+                
             } else {
                 std::string filePath = resolve_module_path(moduleName);
                 if (filePath.empty()) {
@@ -135,7 +137,6 @@ namespace ast {
 
     // CallStatement
     Node::Ptr CallStatement::compute_stmt_type(SymbolTable &st) {
-        std::cout << "CallStatement::compute_stmt_type" << std::endl;
         if(m_callee) {
             auto callee_id = std::dynamic_pointer_cast<Identifier>(m_callee);
             if (callee_id) {
@@ -178,14 +179,12 @@ namespace ast {
     }
 
     Node::Ptr CallStatement::add_to_symtab_forward(SymbolTable &st) {
-        std::cout << "CallStatement::add_to_symtab_forward" << std::endl;
         if(m_callee) 
             m_callee->add_to_symtab_forward(st);
         return nullptr;
     }
 
     Node::Ptr CallStatement::add_to_symtab_ordered(SymbolTable &st) {
-        std::cout<< "CallStatement::add_to_symtab_ordered" << std::endl;
         if(m_callee)
             m_callee->add_to_symtab_ordered(st);
         if(m_arguments)
@@ -367,9 +366,6 @@ Node::Ptr ClassStatement::add_to_symtab_ordered(SymbolTable &st) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_name);
             auto stmt_name = std::dynamic_pointer_cast<Identifier>(m_stmt->get_name());
             if (id && stmt_name) {
-                if(st.lookup(id->get_name())) {
-                     return set_error(FF("Identifier '{}' in argument list of function '{}' is already in symtab", id->get_name(), stmt_name->get_name()));
-                }
                 if(m_type) {
                     auto type = std::dynamic_pointer_cast<Identifier>(m_type);
                     if(!BuiltinManager::get_builtin_type(type->get_name())){
@@ -377,6 +373,9 @@ Node::Ptr ClassStatement::add_to_symtab_ordered(SymbolTable &st) {
                     }
                     return m_type->compute_stmt_type(st);
                 } 
+                if(st.lookup(id->get_name())) {
+                     return set_error(FF("Identifier '{}' in argument list of function '{}' is already in symtab", id->get_name(), stmt_name->get_name()));
+                }
             }
         }
         return nullptr;
@@ -395,27 +394,45 @@ Node::Ptr ClassStatement::add_to_symtab_ordered(SymbolTable &st) {
         return nullptr;
     }
 
-    Node::Ptr Parameter::add_to_symtab_ordered(SymbolTable &st) {
-        if(m_name) {
-            auto id = std::dynamic_pointer_cast<Identifier>(m_name);
-            if(id) {
-                if(m_stmt) {
-                    auto stmt_name = std::dynamic_pointer_cast<Identifier>(m_stmt->get_name());
-                    if (st.is_builtin(id->get_name())) {
-                        return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
-                    }
+Node::Ptr Parameter::add_to_symtab_ordered(SymbolTable &st) {
+    if (m_name) {
+        // Check if m_name is a String
+        auto stringNode = std::dynamic_pointer_cast<String>(m_name);
+        if (stringNode) {
+            return set_error(fmt::format(
+                "Parameter '{}' cannot be a String literal in argument list", 
+                stringNode->as_string()
+            ));
+        }
+
+        // Check if m_name is an Identifier
+        auto id = std::dynamic_pointer_cast<Identifier>(m_name);
+        if (id) {
+            if (m_stmt) {
+                auto stmt_name = std::dynamic_pointer_cast<Identifier>(m_stmt->get_name());
+                if (id->get_name() == stmt_name->get_name()) {
+                    return set_error(fmt::format(
+                        "Identifier '{}' in argument list of function '{}' is already in symtab",
+                        id->get_name(), stmt_name->get_name()
+                    ));
                 }
-                if(st.lookup(id->get_name())) {
-                    return set_error(FF("Identifier '{}' is already in symtab", id->get_name()));
+                if (st.is_builtin(id->get_name())) {
+                    return set_error(FF("Identifier '{}' is a built-in type and cannot be used as an identifier", id->get_name()));
+                }
+                if (st.lookup(id->get_name())) {
+                    return set_error(FF("Identifier '{}' in argument list of function '{}' is already in symtab", id->get_name(), stmt_name->get_name()));
                 }
             }
-            m_name->add_to_symtab_ordered(st);
+            st.add_symbol(id->get_name(), shared_from_this());
         }
-        if(m_type) {
-            m_type->add_to_symtab_ordered(st);
-        }
-        return nullptr;
     }
+
+    if (m_type) {
+        m_type->add_to_symtab_ordered(st);
+    }
+
+    return nullptr;
+}
 
     // ParameterList
     Node::Ptr ParameterList::compute_stmt_type(SymbolTable &st) {
@@ -443,10 +460,10 @@ Node::Ptr ClassStatement::add_to_symtab_ordered(SymbolTable &st) {
     Node::Ptr ParameterList::add_to_symtab_ordered(SymbolTable &st) {
         Node::Ptr error = nullptr;
         if (m_first) {
-            error = m_first->add_to_symtab_forward(st);
+            error = m_first->add_to_symtab_ordered(st);
         }
         if (m_next) {
-            error = m_next->add_to_symtab_forward(st);
+            error = m_next->add_to_symtab_ordered(st);
         }
         return error;
     }
@@ -501,9 +518,10 @@ Node::Ptr ClassStatement::add_to_symtab_ordered(SymbolTable &st) {
         }
 
         if (m_parameters) {
-            error = m_parameters->compute_stmt_type(st);
+            error = m_parameters->compute_stmt_type(*m_symtab);
             if (error) return error;
         }
+        
         if (m_body) {
             assert(m_body->is_stmt_list());
 
@@ -536,7 +554,6 @@ Node::Ptr ClassStatement::add_to_symtab_ordered(SymbolTable &st) {
 
 
     Node::Ptr FunctionStatement::add_to_symtab_forward(SymbolTable &st) {
-        std::cout << "FunctionStatement::add_to_symtab_forward" << std::endl;
         if(m_name) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_name);
             if (st.is_builtin(id->get_name())) {
@@ -551,7 +568,6 @@ Node::Ptr ClassStatement::add_to_symtab_ordered(SymbolTable &st) {
     }
 
     Node::Ptr FunctionStatement::add_to_symtab_ordered(SymbolTable &st) {
-        std::cout << "FunctionStatement::add_to_symtab_ordered" << std::endl;
         if (!m_symtab) {
             m_symtab = std::make_unique<SymbolTable>(ScopeType::Func);
         }
@@ -609,7 +625,6 @@ Node::Ptr ClassStatement::add_to_symtab_ordered(SymbolTable &st) {
     }
 
     Node::Ptr AssignmentStatement::compute_stmt_type(SymbolTable &st) {
-        std::cout << "AssignmentStatement::compute_stmt_type" << std::endl;
         if (m_left) {
             auto id = std::dynamic_pointer_cast<Identifier>(m_left);
             if(id) {
@@ -636,7 +651,6 @@ Node::Ptr ClassStatement::add_to_symtab_ordered(SymbolTable &st) {
     }
 
     Node::Ptr AssignmentStatement::add_to_symtab_forward(SymbolTable &st) {
-        std::cout << "AssignmentStatement::add_to_symtab_forward" << std::endl;
         if (m_left) {
             return m_left->add_to_symtab_forward(st);
         }
@@ -644,7 +658,6 @@ Node::Ptr ClassStatement::add_to_symtab_ordered(SymbolTable &st) {
     }
 
     Node::Ptr AssignmentStatement::add_to_symtab_ordered(SymbolTable &st) {
-        std::cout << "AssignmentStatement::add_to_symtab_ordered" << std::endl;
         if (m_left) {
             m_left->add_to_symtab_ordered(st);
         }
@@ -729,7 +742,6 @@ Node::Ptr ClassStatement::add_to_symtab_ordered(SymbolTable &st) {
     }
 
     Node::Ptr OpDot::compute_stmt_type(SymbolTable &st) {
-        std::cout << "OpDot::compute_stmt_type" << std::endl;
         Node::Ptr leftError = m_left->compute_stmt_type(st);
         if (leftError) {
             return leftError;
@@ -767,6 +779,9 @@ Node::Ptr ClassStatement::add_to_symtab_ordered(SymbolTable &st) {
         auto rightIdentifier = std::dynamic_pointer_cast<Identifier>(m_right);
         if (!rightIdentifier) {
             return set_error("Right-hand side of dot expression must be an identifier");
+        }
+        if (st.is_builtin(rightIdentifier->get_name())) {
+            return set_error(FF("Identifier '{}' has no subsymbol '{}'", leftIdentifier->get_name(), rightIdentifier->get_name()));
         }
 
         auto memberSymbol = classSymTab->lookup(rightIdentifier->get_name());

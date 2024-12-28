@@ -67,6 +67,8 @@ class OpAdd : public OpBinary {
 public:
     OpAdd(const Node::Ptr &left, const Node::Ptr &right) : OpBinary(OP_PLUS, left, right) {}
 
+    Node::Ptr compute_stmt_type(SymbolTable &st) override;
+
 protected:
     std::string operator_name() const override { return "Add"; }
 };
