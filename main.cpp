@@ -73,6 +73,8 @@ static int handle_mode_file(std::string_view arg) {
         return ERR;
     }
 
+    std::cout << compiler.get_wasm_ctx().body().str() << std::endl;
+
     return result;
 }
 

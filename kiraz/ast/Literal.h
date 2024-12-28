@@ -12,6 +12,10 @@ public:
     std::string as_string() const override {return fmt::format("Int({})", m_value);}
     // std::string as_string() const override { return fmt::format("Int({}, {})", m_base, m_value); }
 
+    Node::Ptr gen_wat(WasmContext &ctx) override {
+        ctx.body() << "  i64.const " << m_value << "\n";
+        return nullptr;
+    }
 private:
     int64_t m_value;
     int64_t m_base;

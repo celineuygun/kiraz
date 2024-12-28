@@ -91,6 +91,7 @@ int Compiler::compile(Node::Ptr root) {
     }
 
     if (auto ret = root->gen_wat(m_ctx)) {
+        set_error(fmt::format("WAT Generation Error: {}", ret->as_string()));
         return 2;
     }
 

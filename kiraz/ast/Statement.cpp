@@ -608,43 +608,47 @@ Node::Ptr Parameter::add_to_symtab_ordered(SymbolTable &st) {
         return nullptr;
     }
 
-    Node::Ptr FunctionStatement::gen_wat(WasmContext &ctx) {
-        auto nameID = std::dynamic_pointer_cast<Identifier>(m_name);
-        ctx.body() << "(func $" << nameID->get_name() << "\n";
+Node::Ptr FunctionStatement::gen_wat(WasmContext &ctx) {
+    auto nameID = std::dynamic_pointer_cast<Identifier>(m_name);
+    ctx.body() << "(func $" << nameID->get_name() << "\n";
 
-        if (m_parameters) {
-            auto current = std::dynamic_pointer_cast<ParameterList>(m_parameters);
-            while (current) {
-                if (auto param = current->get_first()) {
-                    auto p = std::dynamic_pointer_cast<Parameter>(param);
-                    auto id = std::dynamic_pointer_cast<Identifier>(p->get_name());
-                    if (id) {
-                        ctx.body() << "  (param $" << id->get_name() << " i64)\n";
-                    }
+    if (m_parameters) {
+        auto current = std::dynamic_pointer_cast<ParameterList>(m_parameters);
+        while (current) {
+            if (auto param = current->get_first()) {
+                auto p = std::dynamic_pointer_cast<Parameter>(param);
+                auto id = std::dynamic_pointer_cast<Identifier>(p->get_name());
+                if (id) {
+                    ctx.body() << "  (param $" << id->get_name() << " i64)\n";
                 }
-                current = std::dynamic_pointer_cast<ParameterList>(current->get_next());
             }
+            current = std::dynamic_pointer_cast<ParameterList>(current->get_next());
         }
-
-        if (m_returnType) {
-            ctx.body() << "  (result i64)\n";
-        }
-
-        if (m_body) {
-            ctx.body() << "  (local\n";
-            auto current = std::dynamic_pointer_cast<StatementList>(m_body);
-            while (current) {
-                if (auto stmt = current->get_first()) {
-                    stmt->gen_wat(ctx);
-                }
-                current = std::dynamic_pointer_cast<StatementList>(current->get_next());
-            }
-            ctx.body() << "  )\n";
-        }
-
-        ctx.body() << ")\n";
-        return nullptr;
     }
+
+    if (m_returnType) {
+        ctx.body() << "  (result i64)\n";
+    }
+
+
+    if (m_body) {
+        auto current = std::dynamic_pointer_cast<StatementList>(m_body);
+        while (current) {
+            if (auto stmt = current->get_first()) {
+                stmt->gen_wat(ctx);
+            }
+            current = std::dynamic_pointer_cast<StatementList>(current->get_next());
+        }
+    }
+
+    ctx.body() << ctx.locals().str();
+    ctx.locals().str("");
+    ctx.body() << ")\n";
+    return nullptr;
+}
+
+
+
 
     Node::Ptr LetStatement::compute_stmt_type(SymbolTable &st) {
         if (m_value) {

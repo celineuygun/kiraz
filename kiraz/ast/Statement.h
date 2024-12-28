@@ -32,6 +32,7 @@ public:
     bool is_stmt_list() const override { return true; }
 
     auto get_statements() const { return m_statements; }
+    auto get_symtab() const { return m_symtab.get(); }
 
     Node::Ptr compute_stmt_type(SymbolTable &st) override;
     Node::Ptr add_to_symtab_forward(SymbolTable &st) override;
@@ -350,13 +351,35 @@ public:
     Node::Ptr add_to_symtab_ordered(SymbolTable &st) override;
 
     Node::Ptr gen_wat(WasmContext &ctx) override {
+        auto id = std::dynamic_pointer_cast<Identifier>(m_identifier);
+        assert(id);
+        ctx.locals() << "  (local $" << id->get_name() << " i64)\n";
+
         if (m_value) {
             m_value->gen_wat(ctx);
+            ctx.body() << "  local.set $" << id->get_name() << "\n";
         }
-        auto id = std::dynamic_pointer_cast<Identifier>(m_identifier);
-        ctx.locals() << "(local $" << id->get_name() << " i64)\n";
+
         return nullptr;
     }
+
+    Node::Ptr gen_wat_to_buffer(WasmContext &ctx, std::ostream &buffer) {
+        auto id = std::dynamic_pointer_cast<Identifier>(m_identifier);
+        assert(id);
+
+        // Add local variable declaration to ctx.locals()
+        ctx.locals() << "  (local $" << id->get_name() << " i64)\n";
+
+        // Generate WAT for the initialization value if present
+        if (m_value) {
+            m_value->gen_wat(ctx); // Generate the value's WAT code
+            buffer << "  local.set $" << id->get_name() << "\n"; // Append instruction to the buffer
+        }
+
+        return nullptr;
+    }
+
+
     
     LetStatement(const Node::Ptr &identifier, const Node::Ptr &type, const Node::Ptr &value)
         : Statement(KW_LET), m_identifier(identifier), m_type(type), m_value(value) {
